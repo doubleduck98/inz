@@ -6,7 +6,12 @@ using JwtRegisteredClaimNames = System.IdentityModel.Tokens.Jwt.JwtRegisteredCla
 
 namespace inz.Server;
 
-public class TokenProvider(IConfiguration configuration)
+public interface ITokenProvider
+{
+    public string Create();
+}
+
+public class TokenProvider(IConfiguration configuration) : ITokenProvider
 {
     public string Create()
     {
@@ -20,6 +25,8 @@ public class TokenProvider(IConfiguration configuration)
                     new Claim(JwtRegisteredClaimNames.Name, "xd")
                 ]
             ),
+            Issuer = configuration["Jwt:Issuer"],
+            Audience = configuration["Jwt:Audience"],
             Expires = DateTime.UtcNow.AddMinutes(60),
             SigningCredentials = credentials
         };

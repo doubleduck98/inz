@@ -1,6 +1,9 @@
 using System.Text;
 using inz.Server;
+using inz.Server.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,8 +15,19 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// identity
+builder.Services.AddDbContext<AuthDbContext>(
+    // options => options.UseInMemoryDatabase("Identity")
+options => options.UseNpgsql(builder.Configuration.GetConnectionString("Identity"))
+);
+builder.Services.AddIdentityCore<User>()
+    .AddUserManager<UserManager<User>>()
+    .AddTokenProvider("jwt", typeof(DataProtectorTokenProvider<User>))
+    .AddEntityFrameworkStores<AuthDbContext>();
+
+
 // JWT Token
-builder.Services.AddSingleton<TokenProvider>();
+builder.Services.AddSingleton<ITokenProvider, TokenProvider>();
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
@@ -22,9 +36,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         o.TokenValidationParameters = new TokenValidationParameters
         {
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]!)),
-            ValidateActor = false,
-            ValidateAudience = false,
-            ValidateIssuer = false
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"]
         };
     });
 
