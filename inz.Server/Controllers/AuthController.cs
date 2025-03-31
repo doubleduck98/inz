@@ -1,6 +1,4 @@
 using inz.Server.Dtos;
-using inz.Server.Models;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace inz.Server.Controllers;
@@ -9,37 +7,45 @@ namespace inz.Server.Controllers;
 [Route("[controller]/[action]")]
 public class AuthController : ControllerBase
 {
-    private readonly ITokenProvider _tokenProvider;
-    private readonly UserManager<User> _users;
+    private readonly IAuthService _auth;
 
-    public AuthController(ITokenProvider tokenProvider, UserManager<User> users)
+    public AuthController(IAuthService authService)
     {
-        _tokenProvider = tokenProvider;
-        _users = users;
+        _auth = authService;
     }
 
     [HttpPost]
     public async Task<IActionResult> Login([FromBody] LoginReq model)
     {
-        var u = await _users.FindByEmailAsync(model.Email);
+        var u = await _auth.FindUserByEmailAsync(model.Email);
         if (u == null) return BadRequest($"User with email ${model.Email} doesn't exist.");
-        
-        var res = await _users.RemoveAuthenticationTokenAsync(u, "jwt", "refreshToken");
-        if (!res.Succeeded) return BadRequest(res.Errors);
-        
-        var rt = await _users.GenerateUserTokenAsync(u, "jwt", "refreshToken");
-        res = await _users.SetAuthenticationTokenAsync(u, "jwt", "refreshToken", rt);
-        if (!res.Succeeded) return BadRequest(res.Errors);
-        
-        var t = _tokenProvider.Create();
+
+        var authenticated = await _auth.VerifyUserAsync(u, model.Password);
+        if (!authenticated) return Unauthorized("Wrong credentials.");
+
+        var t = _auth.GetAuthToken(u);
+        var rt = await _auth.GetRefreshTokenAsync(u);
         return Ok(new LoginResp { Token = t, RefreshToken = rt });
     }
 
     [HttpPost]
-    public async Task<IActionResult> Refresh([FromBody] RefreshReq token)
+    public async Task<IActionResult> Refresh([FromBody] RefreshReq model)
     {
-        var u = await _users.FindByNameAsync("youre beautiful");
-        var valid = await _users.VerifyUserTokenAsync(u, "jwt", "refreshToken", token.Token);
-        return valid ? Ok("valid") : Unauthorized("xdddd");
+        var user = await _auth.FindTokenOwnerAsync(model.Token);
+        if (user == null) return BadRequest();
+
+        var res = await _auth.RefreshTokenAsync(user, model.Token);
+        if (res.IsFailure) return BadRequest(res.Error!.Message);
+
+        var t = _auth.GetAuthToken(user);
+        return Ok(new RefreshResp { Token = t, RefreshToken = res.Value! });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Logout()
+    {
+        var user = await _auth.FindUserByEmailAsync("xd@xd.xd");
+        await _auth.InvalidateUserToken(user!);
+        return Ok();
     }
 }
