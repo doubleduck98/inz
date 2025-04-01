@@ -1,4 +1,5 @@
 using inz.Server.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace inz.Server.Controllers;
@@ -23,7 +24,7 @@ public class AuthController : ControllerBase
         var authenticated = await _auth.VerifyUserAsync(u, model.Password);
         if (!authenticated) return Unauthorized("Wrong credentials.");
 
-        var t = _auth.GetAuthToken(u);
+        var t = await _auth.GetAuthTokenAsync(u);
         var rt = await _auth.GetRefreshTokenAsync(u);
         return Ok(new LoginResp { Token = t, RefreshToken = rt });
     }
@@ -37,14 +38,16 @@ public class AuthController : ControllerBase
         var res = await _auth.RefreshTokenAsync(user, model.Token);
         if (res.IsFailure) return BadRequest(res.Error!.Message);
 
-        var t = _auth.GetAuthToken(user);
+        var t = await _auth.GetAuthTokenAsync(user);
         return Ok(new RefreshResp { Token = t, RefreshToken = res.Value! });
     }
 
+    [Authorize]
     [HttpPost]
     public async Task<IActionResult> Logout()
     {
-        var user = await _auth.FindUserByEmailAsync("xd@xd.xd");
+        var userId = HttpContext.User.FindFirst("Sid");
+        var user = await _auth.FindUserByIdAsync(userId!.Value);
         await _auth.InvalidateUserToken(user!);
         return Ok();
     }

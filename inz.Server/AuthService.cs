@@ -6,9 +6,10 @@ namespace inz.Server;
 
 public interface IAuthService
 {
+    public Task<User?> FindUserByIdAsync(string id);
     public Task<User?> FindUserByEmailAsync(string email);
     public Task<bool> VerifyUserAsync(User user, string password);
-    public string GetAuthToken(User user);
+    public Task<string> GetAuthTokenAsync(User user);
     public Task<string> GetRefreshTokenAsync(User user);
     public Task<User?> FindTokenOwnerAsync(string token);
     public Task<Result<string>> RefreshTokenAsync(User user, string token);
@@ -31,6 +32,11 @@ public class AuthService : IAuthService
         _authDbContext = authDbContext;
     }
 
+    public async Task<User?> FindUserByIdAsync(string id)
+    {
+        return await _userManager.FindByIdAsync(id);
+    }
+
     public async Task<User?> FindUserByEmailAsync(string email)
     {
         return await _userManager.FindByEmailAsync(email);
@@ -46,10 +52,10 @@ public class AuthService : IAuthService
         return await _userManager.CheckPasswordAsync(user, password);
     }
 
-    public string GetAuthToken(User user)
+    public async Task<string> GetAuthTokenAsync(User user)
     {
-        // todo: claims
-        return _tokenProvider.Create();
+        var claims = await _userManager.GetClaimsAsync(user);
+        return _tokenProvider.Create(user, claims);
     }
 
     public async Task<string> GetRefreshTokenAsync(User user)

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using inz.Server.Models;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using JwtRegisteredClaimNames = System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames;
@@ -8,23 +9,25 @@ namespace inz.Server;
 
 public interface ITokenProvider
 {
-    public string Create();
+    public string Create(User user, IList<Claim> claims);
 }
 
 public class TokenProvider(IConfiguration configuration) : ITokenProvider
 {
-    public string Create()
+    public string Create(User user, IList<Claim> claims)
     {
         var secret = configuration["Jwt:Secret"];
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret!));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-        var tokenDescriptor = new SecurityTokenDescriptor()
+        var cs = claims.Concat([
+                new Claim(JwtRegisteredClaimNames.Sid, user.Id),
+                new Claim(JwtRegisteredClaimNames.Name, user.Name!),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email!)
+            ]
+        );
+        var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(
-                [
-                    new Claim(JwtRegisteredClaimNames.Name, "xd")
-                ]
-            ),
+            Subject = new ClaimsIdentity(cs),
             Issuer = configuration["Jwt:Issuer"],
             Audience = configuration["Jwt:Audience"],
             Expires = DateTime.UtcNow.AddMinutes(60),
