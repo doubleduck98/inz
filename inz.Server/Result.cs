@@ -14,15 +14,19 @@ public class Result<T>
         Error = null;
     }
 
-    private Result(string error)
+    private Result(Error error)
     {
         IsSuccess = false;
         Value = default;
-        Error = new Error(error);
+        Error = error;
     }
 
     public static Result<T> Success(T value) => new(value);
-    public static Result<T> Failure(string error) => new(error);
+    public static Result<T> Failure(Error error) => new(error);
 }
 
-public record Error(string Message);
+public record Error(string Message)
+{
+    public static readonly Error TokenExpired = new("Token expired");
+    public static readonly Error InvalidToken = new("Invalid token");
+}

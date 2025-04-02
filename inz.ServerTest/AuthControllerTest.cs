@@ -35,7 +35,7 @@ public class AuthControllerTest
         _authService.Setup(a => a.VerifyUserAsync(It.IsAny<User>(), It.IsAny<string>())).ReturnsAsync(false);
         var req = new LoginReq { Email = "correct@email.com" };
         var res = await _controller.Login(req);
-        Assert.IsType<UnauthorizedObjectResult>(res);
+        Assert.IsType<BadRequestObjectResult>(res);
     }
 
     [Theory]
@@ -54,20 +54,11 @@ public class AuthControllerTest
     }
 
     [Fact]
-    public async Task RefreshUserNotFound_ShouldReturn400()
-    {
-        _authService.Setup(a => a.FindTokenOwnerAsync(It.IsAny<string>())).ReturnsAsync(() => null);
-        var req = new RefreshReq { Token = "xd" };
-        var res = await _controller.Refresh(req);
-        Assert.IsType<BadRequestResult>(res);
-    }
-
-    [Fact]
     public async Task RefreshInvalidToken_ShouldReturn400()
     {
         _authService.Setup(a => a.FindTokenOwnerAsync(It.IsAny<string>())).ReturnsAsync(new User());
-        _authService.Setup(a => a.RefreshTokenAsync(It.IsAny<User>(), It.IsAny<string>()))
-            .ReturnsAsync(Result<string>.Failure(""));
+        _authService.Setup(a => a.RefreshTokenAsync(It.IsAny<string>()))
+            .ReturnsAsync(Result<string>.Failure(new Error("")));
         var req = new RefreshReq { Token = "token" };
         var res = await _controller.Refresh(req);
         Assert.IsType<BadRequestObjectResult>(res);
@@ -77,7 +68,7 @@ public class AuthControllerTest
     public async Task RefreshValid_ShouldReturn200()
     {
         _authService.Setup(a => a.FindTokenOwnerAsync(It.IsAny<string>())).ReturnsAsync(new User());
-        _authService.Setup(a => a.RefreshTokenAsync(It.IsAny<User>(), It.IsAny<string>()))
+        _authService.Setup(a => a.RefreshTokenAsync(It.IsAny<string>()))
             .ReturnsAsync(Result<string>.Success(""));
         var req = new RefreshReq { Token = "token" };
         var res = await _controller.Refresh(req);

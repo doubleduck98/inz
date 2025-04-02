@@ -22,9 +22,7 @@ options => options.UseNpgsql(builder.Configuration.GetConnectionString("Identity
 );
 builder.Services.AddIdentityCore<User>()
     .AddUserManager<UserManager<User>>()
-    .AddTokenProvider("jwt", typeof(DataProtectorTokenProvider<User>))
     .AddEntityFrameworkStores<AuthDbContext>();
-
 
 // JWT Token
 builder.Services.AddSingleton<ITokenProvider, TokenProvider>();
@@ -32,6 +30,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
     {
+        o.MapInboundClaims = false;
         o.RequireHttpsMetadata = false;
         o.TokenValidationParameters = new TokenValidationParameters
         {

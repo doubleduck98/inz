@@ -14,5 +14,8 @@ public class AuthDbContext : IdentityDbContext<User>
     {
         base.OnModelCreating(builder);
         builder.HasDefaultSchema("identity");
+        builder.ApplyConfiguration(new RefreshTokenConfiguration());
     }
+
+    public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
 }
