@@ -1,5 +1,8 @@
 using System.Text;
 using inz.Server;
+using inz.Server.Controllers;
+using inz.Server.Data;
+using inz.Server.Endpoints;
 using inz.Server.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -15,14 +18,14 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// db
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Db")));
+
 // identity
-builder.Services.AddDbContext<AuthDbContext>(
-    // options => options.UseInMemoryDatabase("Identity")
-options => options.UseNpgsql(builder.Configuration.GetConnectionString("Identity"))
-);
 builder.Services.AddIdentityCore<User>()
     .AddUserManager<UserManager<User>>()
-    .AddEntityFrameworkStores<AuthDbContext>();
+    .AddEntityFrameworkStores<AppDbContext>();
 
 // JWT Token
 builder.Services.AddSingleton<ITokenProvider, TokenProvider>();
@@ -61,6 +64,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// endpoits
+app.MapTestEndpoints();
+app.MapResourceEndpoints();
 
 app.MapFallbackToFile("/index.html");
 

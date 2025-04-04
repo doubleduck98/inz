@@ -2,20 +2,21 @@ using inz.Server.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace inz.Server;
+namespace inz.Server.Data;
 
-public class AuthDbContext : IdentityDbContext<User>
+public class AppDbContext : IdentityDbContext<User>
 {
-    public AuthDbContext(DbContextOptions<AuthDbContext> options) : base(options)
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-        builder.HasDefaultSchema("identity");
         builder.ApplyConfiguration(new RefreshTokenConfiguration());
+        builder.ApplyConfiguration(new DocumentConfiguration());
     }
 
+    public DbSet<Document> Documents { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
 }

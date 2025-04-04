@@ -8,4 +8,5 @@ public class User : IdentityUser
     public string? Surname { get; set; }
     
     public List<RefreshToken> RefreshTokens { get; set; } = null!;
+    public List<Document> Documents { get; set; } = null!;
 }

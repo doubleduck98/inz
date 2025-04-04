@@ -1,3 +1,4 @@
+using inz.Server.Data;
 using inz.Server.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -20,13 +21,13 @@ public class AuthService : IAuthService
 {
     private readonly UserManager<User> _userManager;
     private readonly ITokenProvider _tokenProvider;
-    private readonly AuthDbContext _authDbContext;
+    private readonly AppDbContext _db;
 
-    public AuthService(UserManager<User> userManager, ITokenProvider tokenProvider, AuthDbContext authDbContext)
+    public AuthService(UserManager<User> userManager, ITokenProvider tokenProvider, AppDbContext appDbContext)
     {
         _userManager = userManager;
         _tokenProvider = tokenProvider;
-        _authDbContext = authDbContext;
+        _db = appDbContext;
     }
 
     public async Task<User?> FindUserByIdAsync(string id)
@@ -53,49 +54,49 @@ public class AuthService : IAuthService
     public async Task<string> GetRefreshTokenAsync(User user)
     {
         var token = _tokenProvider.CreateRefreshToken();
-        await _authDbContext.RefreshTokens.AddAsync(new RefreshToken
+        await _db.RefreshTokens.AddAsync(new RefreshToken
             { User = user, Value = token, ExpiresAtUtc = DateTime.UtcNow.AddDays(7) });
-        await _authDbContext.SaveChangesAsync();
+        await _db.SaveChangesAsync();
         return token;
     }
 
     public async Task<User> FindTokenOwnerAsync(string token)
     {
-        var t = await _authDbContext.RefreshTokens.Include(rt => rt.User)
+        var t = await _db.RefreshTokens.Include(rt => rt.User)
             .SingleAsync(rt => rt.Value == token);
         return t.User;
     }
 
     public async Task<Result<string>> RefreshTokenAsync(string token)
     {
-        var t = await _authDbContext.RefreshTokens.SingleOrDefaultAsync(t => t.Value == token);
+        var t = await _db.RefreshTokens.SingleOrDefaultAsync(t => t.Value == token);
         if (t == null) return Result<string>.Failure(Error.InvalidToken);
         if (t.ExpiresAtUtc < DateTime.UtcNow) return Result<string>.Failure(Error.TokenExpired);
 
         var newtoken = _tokenProvider.CreateRefreshToken();
         t.Value = newtoken;
         t.ExpiresAtUtc = DateTime.UtcNow.AddDays(7);
-        _authDbContext.RefreshTokens.Update(t);
-        await _authDbContext.SaveChangesAsync();
+        _db.RefreshTokens.Update(t);
+        await _db.SaveChangesAsync();
         return Result<string>.Success(newtoken);
     }
 
     public async Task<Result<string>> InvalidateUserTokenAsync(string userId, string token)
     {
-        var t = await _authDbContext.RefreshTokens.SingleOrDefaultAsync(t => t.Value == token);
+        var t = await _db.RefreshTokens.SingleOrDefaultAsync(t => t.Value == token);
         if (t == null) return Result<string>.Failure(Error.InvalidToken);
         if (t.UserId != userId) return Result<string>.Failure(Error.InvalidToken);
 
-        _authDbContext.RefreshTokens.Remove(t);
-        await _authDbContext.SaveChangesAsync();
+        _db.RefreshTokens.Remove(t);
+        await _db.SaveChangesAsync();
         return Result<string>.Success(null!);
     }
 
     public async Task InvalidateAllUserTokensAsync(string userId)
     {
-        var user = await _authDbContext.Users.Include(u => u.RefreshTokens)
+        var user = await _db.Users.Include(u => u.RefreshTokens)
             .SingleAsync(u => u.Id == userId);
         user.RefreshTokens.Clear();
-        await _authDbContext.SaveChangesAsync();
+        await _db.SaveChangesAsync();
     }
 }
