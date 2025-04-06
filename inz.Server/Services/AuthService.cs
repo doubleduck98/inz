@@ -3,7 +3,7 @@ using inz.Server.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace inz.Server;
+namespace inz.Server.Services;
 
 public interface IAuthService
 {

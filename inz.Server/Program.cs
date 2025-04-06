@@ -1,9 +1,8 @@
 using System.Text;
-using inz.Server;
 using inz.Server.Controllers;
 using inz.Server.Data;
-using inz.Server.Endpoints;
 using inz.Server.Models;
+using inz.Server.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -44,6 +43,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IDocumentsRepository, LocalDocumentsRepository>();
 
 var app = builder.Build();
 
@@ -67,7 +67,6 @@ app.MapControllers();
 
 // endpoits
 app.MapTestEndpoints();
-app.MapResourceEndpoints();
 
 app.MapFallbackToFile("/index.html");
 
