@@ -1,28 +1,39 @@
 namespace inz.Server;
 
-public class Result<T>
+public class Result
 {
     public bool IsSuccess { get; }
     public bool IsFailure => !IsSuccess;
-    public T? Value { get; }
     public Error? Error { get; }
 
-    private Result(T value)
+    protected Result(bool isSuccess, Error? error = null)
     {
-        IsSuccess = true;
-        Value = value;
-        Error = null;
+        switch (isSuccess)
+        {
+            case true when error != null:
+            case false when error == null:
+                throw new InvalidOperationException("Error not supplied when failing");
+
+            default:
+                IsSuccess = isSuccess;
+                Error = error;
+                break;
+        }
     }
 
-    private Result(Error error)
-    {
-        IsSuccess = false;
-        Value = default;
-        Error = error;
-    }
+    public static Result Success() => new(true);
+    public static Result Failure(Error error) => new(false, error);
+    public static Result<T> Success<T>(T value) => new(value, true, null);
+    public static Result<T> Failure<T>(Error error) => new(default, false, error);
+}
 
-    public static Result<T> Success(T value) => new(value);
-    public static Result<T> Failure(Error error) => new(error);
+public class Result<T> : Result
+{
+    public T? Value { get; }
+
+    protected internal Result(T? value, bool isSuccess, Error? error) : base(isSuccess, error) => Value = value;
+
+    public static implicit operator Result<T>(T value) => new(value, true, null);
 }
 
 public record Error(string Message)

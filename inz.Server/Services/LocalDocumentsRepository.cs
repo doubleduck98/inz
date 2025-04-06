@@ -38,7 +38,7 @@ public class LocalDocumentsRepository : IDocumentsRepository
     public async Task<Result<Document>> GetFileMetadataById(string userId, int id)
     {
         var doc = await _db.Documents.FirstOrDefaultAsync(d => d.Id == id && d.OwnerId == userId);
-        return doc == null ? Result<Document>.Success(doc!) : Result<Document>.Failure(Error.FileNotFound);
+        return doc == null ? Result.Success(doc!) : Result.Failure<Document>(Error.FileNotFound);
     }
 
     public async Task<List<Document>> GetFilesForUser(string userId)
@@ -60,7 +60,7 @@ public class LocalDocumentsRepository : IDocumentsRepository
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return Result<Document>.Failure(new Error(e.Message));
+            return Result.Failure<Document>(new Error(e.Message));
         }
 
         var user = await _db.Users.SingleAsync(u => u.Id == userId);
@@ -76,7 +76,7 @@ public class LocalDocumentsRepository : IDocumentsRepository
         await _db.Documents.AddAsync(doc);
         await _db.SaveChangesAsync();
 
-        return Result<Document>.Success(null!);
+        return Result.Success<Document>(null!);
     }
 
     public async Task DeleteDocument(string userId, int id)

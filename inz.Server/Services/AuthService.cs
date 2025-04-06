@@ -13,7 +13,7 @@ public interface IAuthService
     public Task<string> GetRefreshTokenAsync(User user);
     public Task<User> FindTokenOwnerAsync(string token);
     public Task<Result<string>> RefreshTokenAsync(string token);
-    public Task<Result<string>> InvalidateUserTokenAsync(string userId, string token);
+    public Task<Result> InvalidateUserTokenAsync(string userId, string token);
     public Task InvalidateAllUserTokensAsync(string userId);
 }
 
@@ -70,26 +70,26 @@ public class AuthService : IAuthService
     public async Task<Result<string>> RefreshTokenAsync(string token)
     {
         var t = await _db.RefreshTokens.SingleOrDefaultAsync(t => t.Value == token);
-        if (t == null) return Result<string>.Failure(Error.InvalidToken);
-        if (t.ExpiresAtUtc < DateTime.UtcNow) return Result<string>.Failure(Error.TokenExpired);
+        if (t == null) return Result.Failure<string>(Error.InvalidToken);
+        if (t.ExpiresAtUtc < DateTime.UtcNow) return Result.Failure<string>(Error.TokenExpired);
 
         var newtoken = _tokenProvider.CreateRefreshToken();
         t.Value = newtoken;
         t.ExpiresAtUtc = DateTime.UtcNow.AddDays(7);
         _db.RefreshTokens.Update(t);
         await _db.SaveChangesAsync();
-        return Result<string>.Success(newtoken);
+        return newtoken;
     }
 
-    public async Task<Result<string>> InvalidateUserTokenAsync(string userId, string token)
+    public async Task<Result> InvalidateUserTokenAsync(string userId, string token)
     {
         var t = await _db.RefreshTokens.SingleOrDefaultAsync(t => t.Value == token);
-        if (t == null) return Result<string>.Failure(Error.InvalidToken);
-        if (t.UserId != userId) return Result<string>.Failure(Error.InvalidToken);
+        if (t == null) return Result.Failure(Error.InvalidToken);
+        if (t.UserId != userId) return Result.Failure<string>(Error.InvalidToken);
 
         _db.RefreshTokens.Remove(t);
         await _db.SaveChangesAsync();
-        return Result<string>.Success(null!);
+        return Result.Success();
     }
 
     public async Task InvalidateAllUserTokensAsync(string userId)
