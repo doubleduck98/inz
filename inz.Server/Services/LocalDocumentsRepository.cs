@@ -1,24 +1,25 @@
 using inz.Server.Data;
+using inz.Server.Dtos.Resources;
 using inz.Server.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace inz.Server.Services;
 
-public interface IDocumentsRepository
+public interface IDocumentsService
 {
     public Task<FileStream> GetFile(string userId, string fileName);
-    public Task<Document> GetFileMetadata(string userId, string fileName);
-    public Task<Result<Document>> GetFileMetadataById(string userId, int id);
-    public Task<List<Document>> GetFilesForUser(string userId);
-    public Task<Result<Document>> SaveDocument(string userId, IFormFile file);
-    public Task DeleteDocument(string userId, int id);
+    public Task<DocumentDto> GetFileMetadata(string userId, string fileName);
+    public Task<Result<DocumentDto>> GetFileMetadataById(string userId, int id);
+    public Task<List<DocumentDto>> GetFilesForUser(string userId);
+    public Task<Result<DocumentDto>> SaveDocument(string userId, IFormFile file);
+    public Task<Result> DeleteDocument(string userId, int id);
 }
 
-public class LocalDocumentsRepository : IDocumentsRepository
+public class LocalDocumentsService : IDocumentsService
 {
     private readonly AppDbContext _db;
 
-    public LocalDocumentsRepository(AppDbContext db)
+    public LocalDocumentsService(AppDbContext db)
     {
         _db = db;
     }
@@ -29,28 +30,32 @@ public class LocalDocumentsRepository : IDocumentsRepository
         return File.OpenRead(doc.SourcePath);
     }
 
-    public async Task<Document> GetFileMetadata(string userId, string fileName)
+    public async Task<DocumentDto> GetFileMetadata(string userId, string fileName)
     {
         var doc = await _db.Documents.FirstAsync(d => d.FileName == fileName && d.OwnerId == userId);
-        return doc;
+        return DocumentDto.Create(doc.Id, doc.FileName, doc.FileType);
     }
 
-    public async Task<Result<Document>> GetFileMetadataById(string userId, int id)
+    public async Task<Result<DocumentDto>> GetFileMetadataById(string userId, int id)
     {
         var doc = await _db.Documents.FirstOrDefaultAsync(d => d.Id == id && d.OwnerId == userId);
-        return doc == null ? Result.Success(doc!) : Result.Failure<Document>(Error.FileNotFound);
+        return doc != null
+            ? DocumentDto.Create(doc.Id, doc.FileName, doc.FileType)
+            : Result.Failure<DocumentDto>(Error.FileNotFound);
     }
 
-    public async Task<List<Document>> GetFilesForUser(string userId)
+    public async Task<List<DocumentDto>> GetFilesForUser(string userId)
     {
-        return await _db.Documents.Where(d => d.OwnerId == userId).ToListAsync();
+        return await _db.Documents.Where(d => d.OwnerId == userId)
+            .Select(doc => DocumentDto.Create(doc.Id, doc.FileName, doc.FileType))
+            .ToListAsync();
     }
 
-    public async Task<Result<Document>> SaveDocument(string userId, IFormFile file)
+    public async Task<Result<DocumentDto>> SaveDocument(string userId, IFormFile file)
     {
         var path = "/tmp/inz/" + file.FileName;
         // if (File.Exists(path)) return Result<Document>.Failure(Error.FileExists);
-        // todo duplicates + subdirectories
+        // todo subdirectories
 
         try
         {
@@ -60,7 +65,7 @@ public class LocalDocumentsRepository : IDocumentsRepository
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return Result.Failure<Document>(new Error(e.Message));
+            return Result.Failure<DocumentDto>(new Error(e.Message));
         }
 
         var user = await _db.Users.SingleAsync(u => u.Id == userId);
@@ -76,13 +81,16 @@ public class LocalDocumentsRepository : IDocumentsRepository
         await _db.Documents.AddAsync(doc);
         await _db.SaveChangesAsync();
 
-        return Result.Success<Document>(null!);
+        return DocumentDto.Create(doc.Id, doc.FileName, doc.FileType);
     }
 
-    public async Task DeleteDocument(string userId, int id)
+    public async Task<Result> DeleteDocument(string userId, int id)
     {
-        var doc = await _db.Documents.SingleAsync(d => d.Id == id && d.OwnerId == userId);
+        var doc = await _db.Documents.SingleOrDefaultAsync(d => d.Id == id && d.OwnerId == userId);
+        if (doc == null) return Result.Failure(Error.FileNotFound);
+        
         _db.Documents.Remove(doc);
         await _db.SaveChangesAsync();
+        return Result.Success();
     }
 }

@@ -43,7 +43,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IDocumentsRepository, LocalDocumentsRepository>();
+builder.Services.AddScoped<IDocumentsService, LocalDocumentsService>();
 
 var app = builder.Build();
 
