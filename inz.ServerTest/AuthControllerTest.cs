@@ -2,7 +2,7 @@ using inz.Server;
 using inz.Server.Controllers;
 using inz.Server.Dtos;
 using inz.Server.Models;
-using Microsoft.AspNetCore.Identity;
+using inz.Server.Services;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
@@ -58,7 +58,7 @@ public class AuthControllerTest
     {
         _authService.Setup(a => a.FindTokenOwnerAsync(It.IsAny<string>())).ReturnsAsync(new User());
         _authService.Setup(a => a.RefreshTokenAsync(It.IsAny<string>()))
-            .ReturnsAsync(Result<string>.Failure(new Error("")));
+            .ReturnsAsync(Result.Failure<string>(new Error("")));
         var req = new RefreshReq { Token = "token" };
         var res = await _controller.Refresh(req);
         Assert.IsType<BadRequestObjectResult>(res);
@@ -69,7 +69,7 @@ public class AuthControllerTest
     {
         _authService.Setup(a => a.FindTokenOwnerAsync(It.IsAny<string>())).ReturnsAsync(new User());
         _authService.Setup(a => a.RefreshTokenAsync(It.IsAny<string>()))
-            .ReturnsAsync(Result<string>.Success(""));
+            .ReturnsAsync(Result.Success(""));
         var req = new RefreshReq { Token = "token" };
         var res = await _controller.Refresh(req);
         Assert.IsType<OkObjectResult>(res);
