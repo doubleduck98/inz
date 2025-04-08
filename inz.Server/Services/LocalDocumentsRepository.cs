@@ -7,11 +7,12 @@ namespace inz.Server.Services;
 
 public interface IDocumentsService
 {
-    public Task<FileStream> GetFile(string userId, string fileName);
-    public Task<DocumentDto> GetFileMetadata(string userId, string fileName);
+    public Task<Result<FileStream>> GetFile(string userId, string fileName);
+    public Task<Result<DocumentDto>> GetFileMetadata(string userId, string fileName);
     public Task<Result<DocumentDto>> GetFileMetadataById(string userId, int id);
     public Task<List<DocumentDto>> GetFilesForUser(string userId);
     public Task<Result<DocumentDto>> SaveDocument(string userId, IFormFile file);
+    public Task<Result> EditDocument(string userId, int id, string newName);
     public Task<Result> DeleteDocument(string userId, int id);
 }
 
@@ -24,16 +25,21 @@ public class LocalDocumentsService : IDocumentsService
         _db = db;
     }
 
-    public async Task<FileStream> GetFile(string userId, string fileName)
+    public async Task<Result<FileStream>> GetFile(string userId, string fileName)
     {
-        var doc = await _db.Documents.FirstAsync(d => d.FileName == fileName && d.OwnerId == userId);
-        return File.OpenRead(doc.SourcePath);
+        var doc = await _db.Documents.FirstOrDefaultAsync(d => d.FileName == fileName && d.OwnerId == userId);
+        if (doc == null) return Result.Failure<FileStream>(Error.FileNotFound);
+        return Path.Exists(doc.SourcePath)
+            ? File.OpenRead(doc.SourcePath)
+            : Result.Failure<FileStream>(Error.FileNotPresent);
     }
 
-    public async Task<DocumentDto> GetFileMetadata(string userId, string fileName)
+    public async Task<Result<DocumentDto>> GetFileMetadata(string userId, string fileName)
     {
-        var doc = await _db.Documents.FirstAsync(d => d.FileName == fileName && d.OwnerId == userId);
-        return DocumentDto.Create(doc.Id, doc.FileName, doc.FileType);
+        var doc = await _db.Documents.FirstOrDefaultAsync(d => d.FileName == fileName && d.OwnerId == userId);
+        return doc != null
+            ? DocumentDto.Create(doc.Id, doc.FileName, doc.FileType)
+            : Result.Failure<DocumentDto>(Error.FileNotFound);
     }
 
     public async Task<Result<DocumentDto>> GetFileMetadataById(string userId, int id)
@@ -84,11 +90,23 @@ public class LocalDocumentsService : IDocumentsService
         return DocumentDto.Create(doc.Id, doc.FileName, doc.FileType);
     }
 
+    public async Task<Result> EditDocument(string userId, int id, string newName)
+    {
+        var doc = await _db.Documents.SingleOrDefaultAsync(d => d.Id == id && d.OwnerId == userId);
+        if (doc == null) return Result.Failure(Error.FileNotFound);
+
+        doc.FileName = newName;
+        doc.LastEditUtc = DateTime.UtcNow;
+        _db.Documents.Update(doc);
+        await _db.SaveChangesAsync();
+        return Result.Success();
+    }
+
     public async Task<Result> DeleteDocument(string userId, int id)
     {
         var doc = await _db.Documents.SingleOrDefaultAsync(d => d.Id == id && d.OwnerId == userId);
         if (doc == null) return Result.Failure(Error.FileNotFound);
-        
+
         _db.Documents.Remove(doc);
         await _db.SaveChangesAsync();
         return Result.Success();

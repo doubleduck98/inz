@@ -1,6 +1,5 @@
 using inz.Server.Dtos.Resources;
 using inz.Server.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -23,8 +22,8 @@ public class ResourcesController : ControllerBase
     public async Task<IActionResult> Get([FromBody] GetFileReq req)
     {
         var userId = HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value;
-        var doc = await _docs.GetFileMetadata(userId, req.FileName);
-        return Ok(doc);
+        var res = await _docs.GetFileMetadata(userId, req.FileName);
+        return res.IsSuccess ? Ok(res.Value) : Problem(res.Error!.Message, statusCode: 404);
     }
 
     [HttpGet]
@@ -48,8 +47,10 @@ public class ResourcesController : ControllerBase
     public async Task<IActionResult> GetFile([FromBody] GetFileReq req)
     {
         var userId = HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value;
-        var fs = await _docs.GetFile(userId, req.FileName);
-        return File(fs, "application/octet-stream", req.FileName);
+        var res = await _docs.GetFile(userId, req.FileName);
+        return res.IsSuccess
+            ? File(res.Value!, "application/octet-stream", req.FileName)
+            : Problem(res.Error!.Message, statusCode: 404);
     }
 
     [HttpPost]
@@ -57,7 +58,15 @@ public class ResourcesController : ControllerBase
     {
         var userId = HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value;
         var res = await _docs.SaveDocument(userId, file);
-        return res.IsSuccess ? Created(string.Empty, res.Value) : Problem(res.Error?.Message);
+        return res.IsSuccess ? Created($"/{res.Value!.Id}", res.Value) : Problem(res.Error?.Message);
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Edit(int id, [FromBody] EditFileReq req)
+    {
+        var userId = HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value;
+        var res = await _docs.EditDocument(userId, id, req.FileName);
+        return res.IsSuccess ? Ok() : Problem(res.Error!.Message, statusCode: 404);
     }
 
     [HttpDelete]
@@ -66,6 +75,6 @@ public class ResourcesController : ControllerBase
     {
         var userId = HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value;
         var res = await _docs.DeleteDocument(userId, id);
-        return res.IsSuccess ? NoContent() : Problem(res.Error!.Message, statusCode:404);
+        return res.IsSuccess ? NoContent() : Problem(res.Error!.Message, statusCode: 404);
     }
 }
