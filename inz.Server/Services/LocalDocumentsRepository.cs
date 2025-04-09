@@ -1,114 +1,54 @@
-using inz.Server.Data;
-using inz.Server.Dtos.Resources;
-using inz.Server.Models;
-using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace inz.Server.Services;
 
-public interface IDocumentsService
+public interface IDocumentsRepository
 {
-    public Task<Result<FileStream>> GetFile(string userId, string fileName);
-    public Task<Result<DocumentDto>> GetFileMetadata(string userId, string fileName);
-    public Task<Result<DocumentDto>> GetFileMetadataById(string userId, int id);
-    public Task<List<DocumentDto>> GetFilesForUser(string userId);
-    public Task<Result<DocumentDto>> SaveDocument(string userId, IFormFile file);
-    public Task<Result> EditDocument(string userId, int id, string newName);
-    public Task<Result> DeleteDocument(string userId, int id);
+    public Task<bool> DocumentExists(string path);
+    public Task<Stream> GetDocument(string path);
+    public Task<string> SaveDocument(string userId, IFormFile file);
+    public Task SoftDeleteDocument(string path);
 }
 
-public class LocalDocumentsService : IDocumentsService
+public class LocalDocumentsRepository : IDocumentsRepository
 {
-    private readonly AppDbContext _db;
+    private readonly string _dir;
 
-    public LocalDocumentsService(AppDbContext db)
+    public LocalDocumentsRepository(IConfiguration config)
     {
-        _db = db;
+        _dir = config["Storage"] ?? throw new InvalidOperationException();
+    }
+    
+    public Task<bool> DocumentExists(string path)
+    {
+        return Task.FromResult(File.Exists(path));
     }
 
-    public async Task<Result<FileStream>> GetFile(string userId, string fileName)
+    public Task<Stream> GetDocument(string path)
     {
-        var doc = await _db.Documents.FirstOrDefaultAsync(d => d.FileName == fileName && d.OwnerId == userId);
-        if (doc == null) return Result.Failure<FileStream>(Error.FileNotFound);
-        return Path.Exists(doc.SourcePath)
-            ? File.OpenRead(doc.SourcePath)
-            : Result.Failure<FileStream>(Error.FileNotPresent);
+        return Task.FromResult<Stream>(new FileStream(path, FileMode.Open));
     }
 
-    public async Task<Result<DocumentDto>> GetFileMetadata(string userId, string fileName)
+    public async Task<string> SaveDocument(string userId, IFormFile file)
     {
-        var doc = await _db.Documents.FirstOrDefaultAsync(d => d.FileName == fileName && d.OwnerId == userId);
-        return doc != null
-            ? DocumentDto.Create(doc.Id, doc.FileName, doc.FileType)
-            : Result.Failure<DocumentDto>(Error.FileNotFound);
+        var path = Path.Combine(_dir, userId);
+        Directory.CreateDirectory(Path.Combine(_dir, userId));
+
+        var filename = new StringBuilder().Append(DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:sszzz_"));
+        foreach (var b in MD5.HashData(Encoding.UTF8.GetBytes(file.FileName)))
+            filename.Append(b.ToString("X2"));
+        var filepath = Path.Combine(path, filename.ToString());
+
+        await using var fs = new FileStream(filepath, FileMode.Create);
+        await file.CopyToAsync(fs);
+        return filepath;
     }
 
-    public async Task<Result<DocumentDto>> GetFileMetadataById(string userId, int id)
+    public Task SoftDeleteDocument(string path)
     {
-        var doc = await _db.Documents.FirstOrDefaultAsync(d => d.Id == id && d.OwnerId == userId);
-        return doc != null
-            ? DocumentDto.Create(doc.Id, doc.FileName, doc.FileType)
-            : Result.Failure<DocumentDto>(Error.FileNotFound);
-    }
-
-    public async Task<List<DocumentDto>> GetFilesForUser(string userId)
-    {
-        return await _db.Documents.Where(d => d.OwnerId == userId)
-            .Select(doc => DocumentDto.Create(doc.Id, doc.FileName, doc.FileType))
-            .ToListAsync();
-    }
-
-    public async Task<Result<DocumentDto>> SaveDocument(string userId, IFormFile file)
-    {
-        var path = "/tmp/inz/" + file.FileName;
-        // if (File.Exists(path)) return Result<Document>.Failure(Error.FileExists);
-        // todo subdirectories
-
-        try
-        {
-            await using var fs = new FileStream(path, FileMode.OpenOrCreate);
-            await file.CopyToAsync(fs);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return Result.Failure<DocumentDto>(new Error(e.Message));
-        }
-
-        var user = await _db.Users.SingleAsync(u => u.Id == userId);
-        var doc = new Document
-        {
-            User = user,
-            FileName = file.FileName,
-            FileType = FileType.Unknown,
-            SourcePath = path,
-            AddedOnUtc = DateTime.UtcNow,
-            LastEditUtc = DateTime.UtcNow
-        };
-        await _db.Documents.AddAsync(doc);
-        await _db.SaveChangesAsync();
-
-        return DocumentDto.Create(doc.Id, doc.FileName, doc.FileType);
-    }
-
-    public async Task<Result> EditDocument(string userId, int id, string newName)
-    {
-        var doc = await _db.Documents.SingleOrDefaultAsync(d => d.Id == id && d.OwnerId == userId);
-        if (doc == null) return Result.Failure(Error.FileNotFound);
-
-        doc.FileName = newName;
-        doc.LastEditUtc = DateTime.UtcNow;
-        _db.Documents.Update(doc);
-        await _db.SaveChangesAsync();
-        return Result.Success();
-    }
-
-    public async Task<Result> DeleteDocument(string userId, int id)
-    {
-        var doc = await _db.Documents.SingleOrDefaultAsync(d => d.Id == id && d.OwnerId == userId);
-        if (doc == null) return Result.Failure(Error.FileNotFound);
-
-        _db.Documents.Remove(doc);
-        await _db.SaveChangesAsync();
-        return Result.Success();
+        File.Move(path, Path.Combine(
+            Path.GetDirectoryName(path) ?? "", "DELETED_" + Path.GetFileName(path)));
+        return Task.CompletedTask;
     }
 }

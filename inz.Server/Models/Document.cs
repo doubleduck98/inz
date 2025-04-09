@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace inz.Server.Models;
 
@@ -13,17 +14,17 @@ public class Document
     public required FileType FileType { get; set; }
     public required DateTime AddedOnUtc { get; set; }
     public DateTime LastEditUtc { get; set; }
+    public DateTime? DeletedOnUtc { get; set; }
 
     public User? User { get; set; }
 }
 
-// fix to potem
 public enum FileType
 {
-    PdfFile,
-    DocFile,
-    DocxFile,
-    TxtFile,
+    Pdf,
+    Doc,
+    Docx,
+    Txt,
     Unknown
 }
 
@@ -44,14 +45,18 @@ public class DocumentConfiguration : IEntityTypeConfiguration<Document>
             .IsRequired();
 
         builder.Property(d => d.SourcePath)
-            .HasMaxLength(256)
+            .HasMaxLength(128)
             .IsRequired();
 
         builder.Property(d => d.FileType)
+            .HasMaxLength(64)
+            .HasConversion<EnumToStringConverter<FileType>>()
             .IsRequired();
 
         builder.Property(d => d.AddedOnUtc)
             .IsRequired();
+
+        builder.HasQueryFilter(d => !d.DeletedOnUtc.HasValue);
 
         builder.HasOne<User>(d => d.User)
             .WithMany(u => u.Documents)
