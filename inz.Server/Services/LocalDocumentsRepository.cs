@@ -5,10 +5,11 @@ namespace inz.Server.Services;
 
 public interface IDocumentsRepository
 {
-    public Task<bool> DocumentExists(string path);
-    public Task<Stream> GetDocument(string path);
+    public Task<bool> DocumentExists(string userId, string path);
+    public Task<Stream> GetDocument(string userId, string path);
     public Task<string> SaveDocument(string userId, IFormFile file);
-    public Task SoftDeleteDocument(string path);
+    public Task<string> SoftDeleteDocument(string userId, string path);
+    public Task<string> RestoreDocument(string userId, string path);
 }
 
 public class LocalDocumentsRepository : IDocumentsRepository
@@ -19,36 +20,52 @@ public class LocalDocumentsRepository : IDocumentsRepository
     {
         _dir = config["Storage"] ?? throw new InvalidOperationException();
     }
-    
-    public Task<bool> DocumentExists(string path)
+
+    public Task<bool> DocumentExists(string userId, string path)
     {
-        return Task.FromResult(File.Exists(path));
+        return Task.FromResult(File.Exists(Path.Combine(_dir, userId, path)));
     }
 
-    public Task<Stream> GetDocument(string path)
+    public Task<Stream> GetDocument(string userId, string path)
     {
-        return Task.FromResult<Stream>(new FileStream(path, FileMode.Open));
+        return Task.FromResult<Stream>(new FileStream(Path.Combine(_dir, userId, path), FileMode.Open));
     }
 
     public async Task<string> SaveDocument(string userId, IFormFile file)
     {
-        var path = Path.Combine(_dir, userId);
-        Directory.CreateDirectory(Path.Combine(_dir, userId));
+        // create directory if it doesn't exist
+        var dirPath = Path.Combine(_dir, userId);
+        Directory.CreateDirectory(dirPath);
 
-        var filename = new StringBuilder().Append(DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:sszzz_"));
+        // calculate filename hash
+        var fileNameHash = new StringBuilder();
         foreach (var b in MD5.HashData(Encoding.UTF8.GetBytes(file.FileName)))
-            filename.Append(b.ToString("X2"));
-        var filepath = Path.Combine(path, filename.ToString());
+            fileNameHash.Append(b.ToString("X2"));
 
-        await using var fs = new FileStream(filepath, FileMode.Create);
+        // create path storage/userId/fileHash and save file
+        var filePath = Path.Combine(dirPath, fileNameHash.ToString());
+        await using var fs = new FileStream(filePath, FileMode.CreateNew);
         await file.CopyToAsync(fs);
-        return filepath;
+
+        // return hash for database storage
+        return fileNameHash.ToString();
     }
 
-    public Task SoftDeleteDocument(string path)
+    public Task<string> SoftDeleteDocument(string userId, string path)
     {
-        File.Move(path, Path.Combine(
-            Path.GetDirectoryName(path) ?? "", "DELETED_" + Path.GetFileName(path)));
-        return Task.CompletedTask;
+        var oldPath = Path.Combine(_dir, userId, path);
+        var newHash = "DELETED_" + DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:sszzz_") + path;
+        var newPath = Path.Combine(_dir, userId, newHash);
+        File.Move(oldPath, newPath);
+        return Task.FromResult(newHash);
+    }
+
+    public Task<string> RestoreDocument(string userId, string path)
+    {
+        var oldPath = Path.Combine(_dir, userId, path);
+        var newHash = path.Split("_",3).Last();
+        var newPath = Path.Combine(_dir, userId, newHash);
+        File.Move(oldPath, newPath);
+        return Task.FromResult(newHash);
     }
 }

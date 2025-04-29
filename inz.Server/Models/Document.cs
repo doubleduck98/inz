@@ -61,6 +61,6 @@ public class DocumentConfiguration : IEntityTypeConfiguration<Document>
         builder.HasOne<User>(d => d.User)
             .WithMany(u => u.Documents)
             .HasForeignKey(d => d.OwnerId)
-            .OnDelete(DeleteBehavior.NoAction);
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

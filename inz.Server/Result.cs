@@ -42,6 +42,6 @@ public record Error(string Message)
     public static readonly Error InvalidToken = new("Invalid token");
 
     public static readonly Error FileNotFound = new("File not found");
-    public static readonly Error FileExists = new("File already exists");
+    public static readonly Error FileAlreadyExists = new("File already exists");
     public static readonly Error FileNotPresent = new("File not present on server");
 }

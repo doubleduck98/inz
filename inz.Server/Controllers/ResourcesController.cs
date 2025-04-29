@@ -77,4 +77,12 @@ public class ResourcesController : ControllerBase
         var res = await _docs.DeleteDocument(userId, id);
         return res.IsSuccess ? NoContent() : Problem(res.Error!.Message, statusCode: 404);
     }
+
+    [HttpPost("{id:int}")]
+    public async Task<IActionResult> Restore(int id)
+    {
+        var userId = HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value;
+        var res = await _docs.RestoreDocument(userId, id);
+        return res.IsSuccess ? Ok() : Problem(res.Error!.Message, statusCode: 404);
+    }
 }

@@ -14,6 +14,7 @@ public interface IDocumentsService
     public Task<Result<DocumentDto>> SaveDocument(string userId, IFormFile file);
     public Task<Result> EditDocument(string userId, int id, string newName);
     public Task<Result> DeleteDocument(string userId, int id);
+    public Task<Result> RestoreDocument(string userId, int id);
 }
 
 public class DocumentsService : IDocumentsService
@@ -31,8 +32,8 @@ public class DocumentsService : IDocumentsService
     {
         var doc = await _db.Documents.FirstOrDefaultAsync(d => d.FileName == fileName && d.OwnerId == userId);
         if (doc == null) return Result.Failure<Stream>(Error.FileNotFound);
-        return await _documents.DocumentExists(doc.SourcePath)
-            ? await _documents.GetDocument(doc.SourcePath)
+        return await _documents.DocumentExists(userId, doc.SourcePath)
+            ? await _documents.GetDocument(userId, doc.SourcePath)
             : Result.Failure<Stream>(Error.FileNotPresent);
     }
 
@@ -61,10 +62,18 @@ public class DocumentsService : IDocumentsService
 
     public async Task<Result<DocumentDto>> SaveDocument(string userId, IFormFile file)
     {
+        var alreadyExists = _db.Documents.Any(d => d.FileName == file.FileName && d.OwnerId == userId);
+        if (alreadyExists) return Result.Failure<DocumentDto>(Error.FileAlreadyExists);
+
         string path;
         try
         {
             path = await _documents.SaveDocument(userId, file);
+        }
+        catch (IOException e)
+        {
+            Console.WriteLine(e.ToString());
+            return Result.Failure<DocumentDto>(Error.FileAlreadyExists);
         }
         catch (Exception e)
         {
@@ -104,9 +113,25 @@ public class DocumentsService : IDocumentsService
     {
         var doc = await _db.Documents.SingleOrDefaultAsync(d => d.Id == id && d.OwnerId == userId);
         if (doc == null) return Result.Failure(Error.FileNotFound);
-        
-        await _documents.SoftDeleteDocument(doc.SourcePath);
+
+        var newPath = await _documents.SoftDeleteDocument(userId, doc.SourcePath);
         doc.DeletedOnUtc = DateTime.UtcNow;
+        doc.SourcePath = newPath;
+        await _db.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> RestoreDocument(string userId, int id)
+    {
+        var doc = await _db.Documents.IgnoreQueryFilters().SingleOrDefaultAsync(d => d.Id == id && d.OwnerId == userId);
+        if (doc is not { DeletedOnUtc: not null }) return Result.Failure(Error.FileNotFound);
+
+        var isNotUnique = await _db.Documents.AnyAsync(d => d.FileName == doc.FileName);
+        if (isNotUnique) return Result.Failure(Error.FileAlreadyExists);
+
+        var newPath = await _documents.RestoreDocument(userId, doc.SourcePath);
+        doc.DeletedOnUtc = null;
+        doc.SourcePath = newPath;
         await _db.SaveChangesAsync();
         return Result.Success();
     }

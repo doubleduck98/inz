@@ -1,4 +1,5 @@
 using System.Text;
+using inz.Server;
 using inz.Server.Controllers;
 using inz.Server.Data;
 using inz.Server.Models;
@@ -46,6 +47,9 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDocumentsService, DocumentsService>();
 builder.Services.AddScoped<IDocumentsRepository, LocalDocumentsRepository>();
 
+// bg jobs
+builder.Services.AddHostedService<TokenCleanupService>();
+
 var app = builder.Build();
 
 app.UseDefaultFiles();
@@ -72,3 +76,6 @@ app.MapTestEndpoints();
 app.MapFallbackToFile("/index.html");
 
 app.Run();
+
+// ReSharper disable once ClassNeverInstantiated.Global
+public partial class Program;
