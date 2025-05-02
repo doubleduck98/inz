@@ -6,22 +6,27 @@ import fs from 'fs';
 import path from 'path';
 import child_process from 'child_process';
 import { env } from 'process';
+import { VitePWA } from 'vite-plugin-pwa';
 
 const baseFolder =
-    env.APPDATA !== undefined && env.APPDATA !== ''
-        ? `${env.APPDATA}/ASP.NET/https`
-        : `${env.HOME}/.aspnet/https`;
+  env.APPDATA !== undefined && env.APPDATA !== ''
+    ? `${env.APPDATA}/ASP.NET/https`
+    : `${env.HOME}/.aspnet/https`;
 
-const certificateName = "inz.client";
+const certificateName = 'inz.client';
 const certFilePath = path.join(baseFolder, `${certificateName}.pem`);
 const keyFilePath = path.join(baseFolder, `${certificateName}.key`);
 
 if (!fs.existsSync(baseFolder)) {
-    fs.mkdirSync(baseFolder, { recursive: true });
+  fs.mkdirSync(baseFolder, { recursive: true });
 }
 
 if (!fs.existsSync(certFilePath) || !fs.existsSync(keyFilePath)) {
-    if (0 !== child_process.spawnSync('dotnet', [
+  if (
+    0 !==
+    child_process.spawnSync(
+      'dotnet',
+      [
         'dev-certs',
         'https',
         '--export-path',
@@ -29,33 +34,82 @@ if (!fs.existsSync(certFilePath) || !fs.existsSync(keyFilePath)) {
         '--format',
         'Pem',
         '--no-password',
-    ], { stdio: 'inherit', }).status) {
-        throw new Error("Could not create certificate.");
-    }
+      ],
+      { stdio: 'inherit' }
+    ).status
+  ) {
+    throw new Error('Could not create certificate.');
+  }
 }
 
-const target = env.ASPNETCORE_HTTPS_PORT ? `https://localhost:${env.ASPNETCORE_HTTPS_PORT}` :
-    env.ASPNETCORE_URLS ? env.ASPNETCORE_URLS.split(';')[0] : 'https://localhost:7258';
+const target = env.ASPNETCORE_HTTPS_PORT
+  ? `https://localhost:${env.ASPNETCORE_HTTPS_PORT}`
+  : env.ASPNETCORE_URLS
+    ? env.ASPNETCORE_URLS.split(';')[0]
+    : 'https://localhost:7258';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-    plugins: [plugin()],
-    resolve: {
-        alias: {
-            '@': fileURLToPath(new URL('./src', import.meta.url))
-        }
+  plugins: [
+    plugin(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      injectRegister: 'auto',
+
+      pwaAssets: {
+        disabled: true,
+        config: true,
+      },
+
+      manifest: {
+        name: 'pwatest',
+        short_name: 'pwatest',
+        description: 'xdddddddddddddd',
+        theme_color: '#6b44cb',
+        icons: [
+          {
+            src: '/icons/react-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: '/icons/react-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+        ],
+      },
+
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+      },
+
+      devOptions: {
+        enabled: true,
+        navigateFallback: 'index.html',
+        suppressWarnings: true,
+        type: 'module',
+      },
+    }),
+  ],
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
-    server: {
-        proxy: {
-            '^/weatherforecast': {
-                target,
-                secure: false
-            }
-        },
-        port: 5173,
-        https: {
-            key: fs.readFileSync(keyFilePath),
-            cert: fs.readFileSync(certFilePath),
-        }
-    }
-})
+  },
+  server: {
+    proxy: {
+      '^/weatherforecast': {
+        target,
+        secure: false,
+      },
+    },
+    port: 5173,
+    https: {
+      key: fs.readFileSync(keyFilePath),
+      cert: fs.readFileSync(certFilePath),
+    },
+  },
+});
