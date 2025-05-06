@@ -1,4 +1,5 @@
 using inz.Server.Data;
+using inz.Server.Dtos.Auth;
 using inz.Server.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -7,14 +8,11 @@ namespace inz.Server.Services;
 
 public interface IAuthService
 {
-    public Task<User?> FindUserByEmailAsync(string email);
-    public Task<bool> VerifyUserAsync(User user, string password);
-    public Task<string> GetAuthTokenAsync(User user);
-    public Task<string> GetRefreshTokenAsync(User user);
-    public Task<User> FindTokenOwnerAsync(string token);
-    public Task<Result<string>> RefreshTokenAsync(string token);
+    public Task<Result<LoginResp>> LoginAsync(string email, string password);
+    public Task<Result<RefreshResp>> RefreshTokenAsync(string token);
     public Task<Result> InvalidateUserTokenAsync(string userId, string token);
     public Task InvalidateAllUserTokensAsync(string userId);
+    public void SetCookie(HttpResponse response, string token);
 }
 
 public class AuthService : IAuthService
@@ -30,55 +28,41 @@ public class AuthService : IAuthService
         _db = appDbContext;
     }
 
-    public async Task<User?> FindUserByIdAsync(string id)
+    public async Task<Result<LoginResp>> LoginAsync(string email, string password)
     {
-        return await _userManager.FindByIdAsync(id);
-    }
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null) return Result.Failure<LoginResp>(Error.AuthenticationFailed);
 
-    public async Task<User?> FindUserByEmailAsync(string email)
-    {
-        return await _userManager.FindByEmailAsync(email);
-    }
+        var authenticated = await _userManager.CheckPasswordAsync(user, password);
+        if (!authenticated) return Result.Failure<LoginResp>(Error.AuthenticationFailed);
 
-    public async Task<bool> VerifyUserAsync(User user, string password)
-    {
-        return await _userManager.CheckPasswordAsync(user, password);
-    }
-
-    public async Task<string> GetAuthTokenAsync(User user)
-    {
         var claims = await _userManager.GetClaimsAsync(user);
-        return _tokenProvider.CreateToken(user, claims);
-    }
+        var token = _tokenProvider.CreateToken(user, claims);
 
-    public async Task<string> GetRefreshTokenAsync(User user)
-    {
-        var token = _tokenProvider.CreateRefreshToken();
+        var refreshToken = _tokenProvider.CreateRefreshToken();
         await _db.RefreshTokens.AddAsync(new RefreshToken
-            { User = user, Value = token, ExpiresAtUtc = DateTime.UtcNow.AddDays(7) });
+            { User = user, Value = refreshToken, ExpiresAtUtc = DateTime.UtcNow.AddDays(7) });
         await _db.SaveChangesAsync();
-        return token;
+
+        return new LoginResp(new UserDto(user.Name ?? "", user.Surname ?? "", user.Email ?? "", refreshToken), token);
     }
 
-    public async Task<User> FindTokenOwnerAsync(string token)
+    public async Task<Result<RefreshResp>> RefreshTokenAsync(string token)
     {
-        var t = await _db.RefreshTokens.Include(rt => rt.User)
-            .SingleAsync(rt => rt.Value == token);
-        return t.User;
-    }
+        var t = await _db.RefreshTokens.Include(t => t.User).SingleOrDefaultAsync(t => t.Value == token);
+        if (t == null) return Result.Failure<RefreshResp>(Error.InvalidToken);
+        if (t.ExpiresAtUtc < DateTime.UtcNow) return Result.Failure<RefreshResp>(Error.TokenExpired);
 
-    public async Task<Result<string>> RefreshTokenAsync(string token)
-    {
-        var t = await _db.RefreshTokens.SingleOrDefaultAsync(t => t.Value == token);
-        if (t == null) return Result.Failure<string>(Error.InvalidToken);
-        if (t.ExpiresAtUtc < DateTime.UtcNow) return Result.Failure<string>(Error.TokenExpired);
-
-        var newtoken = _tokenProvider.CreateRefreshToken();
-        t.Value = newtoken;
+        var newRefresh = _tokenProvider.CreateRefreshToken();
+        t.Value = newRefresh;
         t.ExpiresAtUtc = DateTime.UtcNow.AddDays(7);
         _db.RefreshTokens.Update(t);
         await _db.SaveChangesAsync();
-        return newtoken;
+
+        var claims = await _userManager.GetClaimsAsync(t.User);
+        var newToken = _tokenProvider.CreateToken(t.User, claims);
+
+        return new RefreshResp(newToken, newRefresh);
     }
 
     public async Task<Result> InvalidateUserTokenAsync(string userId, string token)
@@ -94,9 +78,21 @@ public class AuthService : IAuthService
 
     public async Task InvalidateAllUserTokensAsync(string userId)
     {
-        var user = await _db.Users.Include(u => u.RefreshTokens)
-            .SingleAsync(u => u.Id == userId);
-        user.RefreshTokens.Clear();
-        await _db.SaveChangesAsync();
+        var tokens = _db.RefreshTokens.Where(t => t.UserId == userId);
+        if (tokens.Any())
+        {
+            _db.RefreshTokens.RemoveRange(tokens);
+            await _db.SaveChangesAsync();
+        }
+    }
+
+    public void SetCookie(HttpResponse response, string token)
+    {
+        response.Cookies.Append("jwt", token, new CookieOptions
+        {
+            HttpOnly = true,
+            // Secure = true,
+            SameSite = SameSiteMode.Strict
+        });
     }
 }

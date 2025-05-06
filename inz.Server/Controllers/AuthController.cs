@@ -1,4 +1,4 @@
-using inz.Server.Dtos;
+using inz.Server.Dtos.Auth;
 using inz.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +11,7 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthService _auth;
 
+
     public AuthController(IAuthService authService)
     {
         _auth = authService;
@@ -19,26 +20,21 @@ public class AuthController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Login([FromBody] LoginReq model)
     {
-        var u = await _auth.FindUserByEmailAsync(model.Email);
-        if (u == null) return BadRequest($"User with email ${model.Email} doesn't exist.");
+        var res = await _auth.LoginAsync(model.Email, model.Password);
+        if (res.IsFailure) return Problem(res.Error!.Message, statusCode: StatusCodes.Status400BadRequest);
 
-        var authenticated = await _auth.VerifyUserAsync(u, model.Password);
-        if (!authenticated) return BadRequest("Wrong credentials.");
-
-        var t = await _auth.GetAuthTokenAsync(u);
-        var rt = await _auth.GetRefreshTokenAsync(u);
-        return Ok(new LoginResp { Token = t, RefreshToken = rt });
+        _auth.SetCookie(HttpContext.Response, res.Value!.Token);
+        return Ok(res.Value!.User);
     }
 
     [HttpPost]
     public async Task<IActionResult> Refresh([FromBody] RefreshReq model)
     {
         var res = await _auth.RefreshTokenAsync(model.Token);
-        if (res.IsFailure) return BadRequest(res.Error!.Message);
+        if (res.IsFailure) return Problem(res.Error!.Message, statusCode: StatusCodes.Status400BadRequest);
 
-        var user = await _auth.FindTokenOwnerAsync(res.Value!);
-        var t = await _auth.GetAuthTokenAsync(user);
-        return Ok(new RefreshResp { Token = t, RefreshToken = res.Value! });
+        _auth.SetCookie(HttpContext.Response, res.Value!.Token);
+        return Ok(new { res.Value.RefreshToken });
     }
 
     [Authorize]

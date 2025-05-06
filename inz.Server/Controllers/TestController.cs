@@ -1,4 +1,4 @@
-using inz.Server.Dtos;
+using inz.Server.Dtos.Auth;
 using inz.Server.Models;
 using Microsoft.AspNetCore.Identity;
 

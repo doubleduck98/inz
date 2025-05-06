@@ -38,6 +38,8 @@ public class Result<T> : Result
 
 public record Error(string Message)
 {
+    public static readonly Error AuthenticationFailed = new("Authentication failed");
+    
     public static readonly Error TokenExpired = new("Token expired");
     public static readonly Error InvalidToken = new("Invalid token");
 

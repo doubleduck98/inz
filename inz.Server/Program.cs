@@ -41,6 +41,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"]
         };
+        o.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var cookie = context.Request.Cookies["jwt"];
+                if (!cookie.IsNullOrEmpty())
+                {
+                    context.Token = cookie;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -78,4 +91,7 @@ app.MapFallbackToFile("/index.html");
 app.Run();
 
 // ReSharper disable once ClassNeverInstantiated.Global
-public partial class Program;
+namespace inz.Server
+{
+    public partial class Program;
+}
