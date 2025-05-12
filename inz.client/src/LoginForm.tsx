@@ -5,7 +5,6 @@ import {
   Checkbox,
   Container,
   Group,
-  LoadingOverlay,
   Notification,
   Paper,
   PasswordInput,
@@ -16,13 +15,15 @@ import {
 } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { useForm } from '@mantine/form';
-import { useState } from 'react';
-import { useDisclosure, useMediaQuery } from '@mantine/hooks';
+import { useEffect, useRef, useState } from 'react';
+import { useDisclosure, useLocalStorage } from '@mantine/hooks';
+import { useAuth } from './hooks/useAuth';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 function LoginForm() {
+  const { user, login, logout } = useAuth();
   const theme = useMantineTheme();
-  const isMobile = useMediaQuery('(max-width: 768px)');
   const form = useForm({
     initialValues: {
       email: '',
@@ -42,9 +43,24 @@ function LoginForm() {
     },
   });
 
+  const [rememberMe, setRememberMe] = useState(false);
+  const [credentials, saveCreds, deleteCreds] = useLocalStorage({
+    key: 'login_saved_credentials',
+    defaultValue: '',
+  });
+  const init = useRef(false);
+  useEffect(() => {
+    if (!init.current && credentials) {
+      form.setFieldValue('email', credentials);
+      setRememberMe(true);
+      init.current = true;
+    }
+  }, [credentials, form]);
+
   const [loading, isLoading] = useDisclosure(false);
   const [errorVisible, setError] = useState(false);
-  async function login() {
+  const navigate = useNavigate();
+  async function handleLogin() {
     const opts = {
       url: 'Auth/Login',
       method: 'POST',
@@ -58,14 +74,26 @@ function LoginForm() {
     setTimeout(async () => {
       try {
         const { data } = await axios.request(opts);
-        console.log(data);
+        login(data);
+
+        if (rememberMe) {
+          saveCreds(form.values.email);
+        } else {
+          deleteCreds();
+        }
+
+        navigate('/');
       } catch {
         setError(true);
       } finally {
         isLoading.close();
       }
-    }, 1200);
+    }, 800);
   }
+
+  const handleLogout = () => {
+    logout();
+  };
 
   const titleStyles = () => ({
     root: {
@@ -83,7 +111,7 @@ function LoginForm() {
         To też jest
       </Text>
 
-      <form onSubmit={form.onSubmit(() => login())}>
+      <form onSubmit={form.onSubmit(handleLogin)}>
         <Box pos="relative">
           <Paper
             withBorder
@@ -100,13 +128,6 @@ function LoginForm() {
               >
                 {'Wystąpił problem podczas próby logowania.'}
               </Notification>
-            )}
-
-            {!isMobile && (
-              <LoadingOverlay
-                visible={loading}
-                overlayProps={{ radius: 'sm', blur: 2 }}
-              />
             )}
 
             <TextInput
@@ -129,25 +150,38 @@ function LoginForm() {
               mt="md"
             />
             <Group justify="space-between" mt="lg">
-              <Checkbox label="Zapamiętaj mnie" />
+              <Checkbox
+                label="Zapamiętaj mnie"
+                defaultChecked={false}
+                checked={rememberMe}
+                onChange={() => {
+                  setRememberMe((prev) => !prev);
+                }}
+              />
               <Anchor component="button" size="sm" c="dimmed">
                 Zapomniałeś hasła?
               </Anchor>
             </Group>
-            <Button type="submit" fullWidth mt="xl">
+            <Button type="submit" fullWidth mt="xl" loading={loading}>
               Zaloguj się
             </Button>
           </Paper>
         </Box>
       </form>
 
-      {isMobile && (
-        <LoadingOverlay
-          zIndex={1000}
-          visible={loading}
-          overlayProps={{ radius: 'sm', blur: 2 }}
-        />
-      )}
+      <div>
+        {user ? (
+          <Button
+            onClick={() => {
+              handleLogout();
+            }}
+          >
+            Logout
+          </Button>
+        ) : (
+          'not logged in'
+        )}
+      </div>
     </Container>
   );
 }

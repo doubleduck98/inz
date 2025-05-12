@@ -97,11 +97,16 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@tabler/icons-react': '@tabler/icons-react/dist/esm/icons/index.mjs',
     },
   },
   server: {
     proxy: {
       '^/Auth': {
+        target,
+        secure: false,
+      },
+      '^/Resources': {
         target,
         secure: false,
       },
