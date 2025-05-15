@@ -1,5 +1,6 @@
 using inz.Server.Dtos.Resources;
 using inz.Server.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -7,7 +8,7 @@ using Microsoft.IdentityModel.JsonWebTokens;
 namespace inz.Server.Controllers;
 
 [ApiController]
-[Authorize]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [Route("[controller]/[action]")]
 public class ResourcesController : ControllerBase
 {

@@ -1,5 +1,6 @@
 using inz.Server.Dtos.Auth;
 using inz.Server.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -25,6 +26,17 @@ public class AuthController : ControllerBase
 
         _auth.SetCookie(HttpContext.Response, res.Value!.Token);
         return Ok(res.Value!.User);
+    }
+
+    [HttpGet]
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+    public async Task<IActionResult> GetToken()
+    {
+        var userId = HttpContext.User.FindFirst("userId");
+        var res = await _auth.LoginWithToken(userId!.Value);
+        
+        _auth.SetCookie(HttpContext.Response, res.Token);
+        return Ok(res.User);
     }
 
     [HttpPost]

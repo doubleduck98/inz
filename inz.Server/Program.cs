@@ -4,6 +4,7 @@ using inz.Server.Controllers;
 using inz.Server.Data;
 using inz.Server.Models;
 using inz.Server.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -30,7 +31,16 @@ builder.Services.AddIdentityCore<User>()
 // JWT Token
 builder.Services.AddSingleton<ITokenProvider, TokenProvider>();
 builder.Services.AddAuthorization();
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        };
+    })
     .AddJwtBearer(o =>
     {
         o.MapInboundClaims = false;
@@ -60,6 +70,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDocumentsService, DocumentsService>();
 builder.Services.AddScoped<IDocumentsRepository, LocalDocumentsRepository>();
 
+builder.Services.AddControllersWithViews();
+
 // bg jobs
 builder.Services.AddHostedService<TokenCleanupService>();
 
@@ -87,6 +99,10 @@ app.MapControllers();
 app.MapTestEndpoints();
 
 app.MapFallbackToFile("/index.html");
+    
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Account}/{action=Login}");
 
 app.Run();
 

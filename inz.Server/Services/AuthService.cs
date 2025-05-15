@@ -1,6 +1,9 @@
+using System.Security.Claims;
 using inz.Server.Data;
 using inz.Server.Dtos.Auth;
 using inz.Server.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,6 +16,9 @@ public interface IAuthService
     public Task<Result> InvalidateUserTokenAsync(string userId, string token);
     public Task InvalidateAllUserTokensAsync(string userId);
     public void SetCookie(HttpResponse response, string token);
+
+    public Task<Result> SignIn(string email, string password, HttpContext context);
+    public Task<LoginResp> LoginWithToken(string userId);
 }
 
 public class AuthService : IAuthService
@@ -94,5 +100,38 @@ public class AuthService : IAuthService
             // Secure = true,
             SameSite = SameSiteMode.Strict
         });
+    }
+
+    public async Task<Result> SignIn(string email, string password, HttpContext context)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null) return Result.Failure<LoginResp>(Error.AuthenticationFailed);
+
+        var authenticated = await _userManager.CheckPasswordAsync(user, password);
+        if (!authenticated) return Result.Failure<LoginResp>(Error.AuthenticationFailed);
+
+        var claims = await _userManager.GetClaimsAsync(user);
+        claims.Add(new Claim("userId", user.Id));
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var principal = new ClaimsPrincipal(identity);
+        await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+        
+        return Result.Success();
+    }
+
+    public async Task<LoginResp> LoginWithToken(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) throw new AuthenticationFailureException("Authenticated user doesn't exist");
+        
+        var claims = await _userManager.GetClaimsAsync(user);
+        var token = _tokenProvider.CreateToken(user, claims);
+
+        var refreshToken = _tokenProvider.CreateRefreshToken();
+        await _db.RefreshTokens.AddAsync(new RefreshToken
+            { User = user, Value = refreshToken, ExpiresAtUtc = DateTime.UtcNow.AddDays(7) });
+        await _db.SaveChangesAsync();
+
+        return new LoginResp(new UserDto(user.Name ?? "", user.Surname ?? "", user.Email ?? "", refreshToken), token);
     }
 }

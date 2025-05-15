@@ -1,0 +1,29 @@
+@model inz.Server.ViewModels.LoginModel
+@{
+    ViewData["Title"] = "Login page";
+}
+
+<html lang="">
+<head>
+    <meta name="viewport" content="width=device-width"/>
+    <title>Login</title>
+</head>
+<body>
+@Html.ValidationMessage("Auth")
+@using (Html.BeginForm())
+{
+    <div class="form-group">
+        @Html.LabelFor(m => m.Email, "Email")
+        @Html.TextBoxFor(m => m.Email)
+        @Html.ValidationMessageFor(m => m.Email)
+    </div>
+    <div class="form-group">
+        @Html.LabelFor(m => m.Password, "Hasło")
+        @Html.PasswordFor(m => m.Password)
+        @Html.ValidationMessageFor(m => m.Password)
+    </div>
+    <div class="margin-top">
+        <button type="submit" class="btn btn-primary">Log in</button>
+    </div>
+}
+</body>
