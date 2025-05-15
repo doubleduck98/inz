@@ -4,7 +4,7 @@ import Layout from './Layout';
 import LoginForm from './LoginForm';
 import Test from './Test';
 import Home from './Home';
-import Docs from './Docs';
+import Docs from './pages/Docs/Docs';
 
 function App() {
   return (
