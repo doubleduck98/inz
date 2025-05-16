@@ -1,10 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Doc } from '../../types/Doc';
-import { Button, FileInput, ScrollArea, TextInput } from '@mantine/core';
+import { Button, ScrollArea, TextInput } from '@mantine/core';
 import axiosInstance from '../../Axios';
 import { IconSearch } from '@tabler/icons-react';
 import { sortData } from './utils/TableUtils';
-import DocsTable from './components/DocsTable';
+import DocsTable from './DocsTable/DocsTable';
+import { useDisclosure } from '@mantine/hooks';
+import UploadModal from './UploadModal/UploadModal';
+import { useForm } from '@mantine/form';
+
+interface FormValues {
+  file: File | null;
+  fileName: string;
+}
 
 const Docs = () => {
   const [docs, setDocs] = useState<Doc[]>([]);
@@ -14,6 +22,9 @@ const Docs = () => {
   const [sortedData, setSortedData] = useState(docs);
   const [sortBy, setSortBy] = useState<keyof Doc | null>(null);
   const [reverseSortDirection, setReverseSortDirection] = useState(false);
+
+  const [modalOpened, { open: openModal, close: closeModal }] =
+    useDisclosure(false);
 
   const toggleRow = (id: number) =>
     setSelection((current) =>
@@ -67,12 +78,28 @@ const Docs = () => {
     setSortedData(docs);
   }, [docs]);
 
-  const [file, setFile] = useState<File | null>(null);
+  const form = useForm<FormValues>({
+    initialValues: {
+      file: null,
+      fileName: '',
+    },
+
+    validate: {
+      file: (val) => (val ? null : 'Proszę wybrać plik'),
+      fileName: (val) => (val.length > 200 ? 'Nazwa jest za długa' : null),
+    },
+  });
+
+  const onFileChange = (file: File | null) => {
+    if (file) form.setValues({ fileName: file.name, file: file });
+    else form.setValues({ file: file });
+  };
+
   const handleUpload = async () => {
-    console.log('xd?');
     const formData = new FormData();
-    if (!file) return;
-    formData.append('file', file);
+    const file: unknown = form.values.file;
+    formData.append('file', file as File);
+    formData.append('fileName', form.values.fileName);
     const opts = {
       url: 'Resources/Create',
       method: 'POST',
@@ -84,8 +111,12 @@ const Docs = () => {
     try {
       const { data } = await axiosInstance.request(opts);
       console.log(data);
+      setDocs([data, ...docs]);
+      form.reset();
+      closeModal();
     } catch (e) {
       console.log(e);
+      form.setErrors({ file: 'Taki plik juz istnieje' });
     }
   };
 
@@ -111,9 +142,16 @@ const Docs = () => {
         onDelete={() => {}}
       />
 
-      <FileInput label="test input" value={file} onChange={setFile} />
-      <Button disabled={file ? false : true} onClick={handleUpload}>
-        Upload
+      <UploadModal
+        opened={modalOpened}
+        onClose={closeModal}
+        onSubmit={form.onSubmit(handleUpload)}
+        inputProps={form.getInputProps}
+        submitDisabled={!form.values.file}
+        onFileChange={onFileChange}
+      />
+      <Button variant="default" onClick={openModal}>
+        Wyslij plik
       </Button>
     </ScrollArea>
   );

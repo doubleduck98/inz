@@ -23,7 +23,7 @@ const TableRow = ({
         <Checkbox checked={selected} onChange={onToggle} />
       </Table.Td>
       <Table.Td>
-        <Group gap="sm">
+        <Group gap="sm" wrap="nowrap">
           <IconFileTypePdf size={26} radius={26} />
           {doc.fileName}
         </Group>

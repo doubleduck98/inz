@@ -1,4 +1,4 @@
-import { Table } from '@mantine/core';
+import { ScrollArea, Table } from '@mantine/core';
 import { Doc } from '../../../types/Doc';
 import TableRow from './TableRow';
 import TableHeader from './TableHeader';
@@ -40,28 +40,29 @@ const DocsTable = ({
   ));
 
   return (
-    <Table maw={400} verticalSpacing="sm">
-      <TableHeader
-        docs={docs}
-        selection={selection}
-        toggleAll={toggleAll}
-        sortBy={sortBy}
-        reverseSortDirection={reverseSortDirection}
-        setSorting={setSorting}
-      />
-
-      <Table.Tbody>
-        {sortedDocs.length > 0 ? (
-          sortedDocs
-        ) : (
-          <Table.Tr>
-            <Table.Td colSpan={4} style={{ textAlign: 'center' }}>
-              Nie znaleziono dokumentów.
-            </Table.Td>
-          </Table.Tr>
-        )}
-      </Table.Tbody>
-    </Table>
+    <ScrollArea>
+      <Table verticalSpacing="sm">
+        <TableHeader
+          docs={docs}
+          selection={selection}
+          toggleAll={toggleAll}
+          sortBy={sortBy}
+          reverseSortDirection={reverseSortDirection}
+          setSorting={setSorting}
+        />
+        <Table.Tbody>
+          {sortedDocs.length > 0 ? (
+            sortedDocs
+          ) : (
+            <Table.Tr>
+              <Table.Td colSpan={4} style={{ textAlign: 'center' }}>
+                Nie znaleziono dokumentów.
+              </Table.Td>
+            </Table.Tr>
+          )}
+        </Table.Tbody>
+      </Table>
+    </ScrollArea>
   );
 };
 

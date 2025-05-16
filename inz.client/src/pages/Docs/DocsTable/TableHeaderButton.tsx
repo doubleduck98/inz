@@ -4,7 +4,7 @@ import {
   IconChevronDown,
   IconSelector,
 } from '@tabler/icons-react';
-import classes from '../Docs.module.css';
+import classes from './Docs.module.css';
 
 interface TableHeaderButtonProps {
   children: React.ReactNode;
@@ -27,7 +27,7 @@ const TableHeaderButton = ({
   return (
     <Table.Th className={classes.th}>
       <UnstyledButton onClick={onSort} className={classes.control}>
-        <Group justify="space-between">
+        <Group justify="space-between" wrap="nowrap">
           <Text fw={500} fz="sm">
             {children}
           </Text>
