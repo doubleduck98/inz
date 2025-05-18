@@ -45,7 +45,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Refresh([FromBody] RefreshReq model)
     {
         var res = await _auth.RefreshTokenAsync(model.Token);
-        if (res.IsFailure) return Problem(res.Error!.Message, statusCode: StatusCodes.Status400BadRequest);
+        if (res.IsFailure) return Problem(res.Error!.Message, type: res.Error!.Type, statusCode: res.Error!.Code);
 
         _auth.SetCookie(HttpContext.Response, res.Value.Token);
         return Ok(new { res.Value.RefreshToken });

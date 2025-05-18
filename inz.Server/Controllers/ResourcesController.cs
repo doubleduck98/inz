@@ -14,75 +14,80 @@ namespace inz.Server.Controllers;
 public class ResourcesController : ControllerBase
 {
     private readonly IDocumentsService _docs;
-    private readonly string _userId;
+    private readonly IHttpContextAccessor _contextAccessor;
 
-    public ResourcesController([FromServices] IDocumentsService documents)
+    private string UserId => _contextAccessor.HttpContext?.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ??
+                             throw new AuthenticationFailureException("User id claim not found");
+
+    public ResourcesController(
+        [FromServices] IDocumentsService documents,
+        [FromServices] IHttpContextAccessor contextAccessor
+    )
     {
-        _userId = HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ??
-                  throw new AuthenticationFailureException("User id claim not found");
+        _contextAccessor = contextAccessor;
         _docs = documents;
     }
 
-    private IActionResult ResultResponse(Result result, IActionResult successResp)
-    {
-        return result.IsSuccess
-            ? successResp
-            : Problem(result.Error!.Message, type: result.Error.Type, statusCode: result.Error.Code);
-    }
+    private ObjectResult ProblemResponse(Result result) =>
+        Problem(result.Error!.Message, type: result.Error.Type, statusCode: result.Error.Code);
 
     [HttpGet]
-    public async Task<IActionResult> Get([FromBody] GetFileReq req)
+    public async Task<IActionResult> Get()
     {
-        var res = await _docs.GetFileMetadata(_userId, req.FileName);
-        return ResultResponse(res, Ok(res.Value));
-    }
-
-    [HttpGet("{id:int}")]
-    public async Task<IActionResult> Get(int id)
-    {
-        var res = await _docs.GetFileMetadataById(_userId, id);
-        return ResultResponse(res, Ok(res.Value));
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> GetAll()
-    {
-        var docs = await _docs.GetFilesForUser(_userId);
+        var docs = await _docs.GetFiles(UserId);
         return Ok(docs);
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetFile([FromBody] GetFileReq req)
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> Download(int id)
     {
-        var res = await _docs.GetFile(_userId, req.FileName);
-        return ResultResponse(res, File(res.Value, "application/octet-stream", req.FileName));
+        var res = await _docs.GetFileStream(UserId, id);
+        return res.IsSuccess
+            ? File(res.Value.File, "application/octet-stream", res.Value.FileName)
+            : ProblemResponse(res);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Download([FromBody] DownloadReq req)
+    {
+        var res = await _docs.GetFileArchive(UserId, req.Ids);
+        return res.IsSuccess
+            ? File(res.Value.File, "application/zip", res.Value.FileName)
+            : ProblemResponse(res);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromForm] IFormFile file)
+    public async Task<IActionResult> Create([FromForm] CreateFileReq req)
     {
-        var res = await _docs.SaveDocument(_userId, file);
-        return ResultResponse(res, Created($"/{res.Value.Id}", res.Value));
+        var res = await _docs.SaveDocument(UserId, req.File, req.FileName);
+        return res.IsSuccess ? Created($"/{res.Value.Id}", res.Value) : ProblemResponse(res);
     }
 
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Edit(int id, [FromBody] EditFileReq req)
     {
-        var res = await _docs.EditDocument(_userId, id, req.FileName);
-        return ResultResponse(res, Ok());
+        var res = await _docs.EditDocument(UserId, id, req.FileName);
+        return res.IsSuccess ? Ok() : ProblemResponse(res);
     }
 
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var res = await _docs.DeleteDocument(_userId, id);
-        return ResultResponse(res, NoContent());
+        var res = await _docs.DeleteDocument(UserId, id);
+        return res.IsSuccess ? NoContent() : ProblemResponse(res);
+    }
+
+    [HttpDelete]
+    public async Task<IActionResult> Delete([FromBody] DeleteReq req)
+    {
+        var res = await _docs.DeleteDocuments(UserId, req.Ids);
+        return res.IsSuccess ? NoContent() : ProblemResponse(res);
     }
 
     [HttpPost("{id:int}")]
     public async Task<IActionResult> Restore(int id)
     {
-        var res = await _docs.RestoreDocument(_userId, id);
-        return ResultResponse(res, Ok());
+        var res = await _docs.RestoreDocument(UserId, id);
+        return res.IsSuccess ? Ok() : ProblemResponse(res);
     }
 }

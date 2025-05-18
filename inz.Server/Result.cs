@@ -62,6 +62,9 @@ public record Error(string Type, string Message, int Code)
     public static readonly Error FileAlreadyExists =
         new("File.ALREADY_EXISTS", "File already exists", StatusCodes.Status409Conflict);
 
+    public static readonly Error FileIllegalExtension =
+        new("File.ILLEGAL_FILE_EX", "File has illegal extension", StatusCodes.Status400BadRequest);
+    
     public static readonly Error FileNotPresent =
         new("File.NOT_PRESENT", "File not present on server", StatusCodes.Status500InternalServerError);
 }

@@ -1,13 +1,10 @@
-using System.Security.Cryptography;
-using System.Text;
-
 namespace inz.Server.Services;
 
 public interface IDocumentsRepository
 {
     public Task<bool> DocumentExists(string userId, string path);
     public Task<Stream> GetDocument(string userId, string path);
-    public Task<string> SaveDocument(string userId, IFormFile file);
+    public Task<string> SaveDocument(string userId, IFormFile file, string fileName);
     public Task<string> SoftDeleteDocument(string userId, string path);
     public Task<string> RestoreDocument(string userId, string path);
 }
@@ -31,24 +28,25 @@ public class LocalDocumentsRepository : IDocumentsRepository
         return Task.FromResult<Stream>(new FileStream(Path.Combine(_dir, userId, path), FileMode.Open));
     }
 
-    public async Task<string> SaveDocument(string userId, IFormFile file)
+    public async Task<string> SaveDocument(string userId, IFormFile file, string fileName)
     {
         // create directory if it doesn't exist
         var dirPath = Path.Combine(_dir, userId);
         Directory.CreateDirectory(dirPath);
 
+        // *zostawiam dla potomnych*
         // calculate filename hash
-        var fileNameHash = new StringBuilder();
-        foreach (var b in MD5.HashData(Encoding.UTF8.GetBytes(file.FileName)))
-            fileNameHash.Append(b.ToString("X2"));
+        // var fileNameHash = new StringBuilder();
+        // foreach (var b in MD5.HashData(Encoding.UTF8.GetBytes(fileName)))
+        //     fileNameHash.Append(b.ToString("X2"));
 
-        // create path storage/userId/fileHash and save file
-        var filePath = Path.Combine(dirPath, fileNameHash.ToString());
+        // create path storage/userId/fileName and save file
+        var filePath = Path.Combine(dirPath, fileName);
         await using var fs = new FileStream(filePath, FileMode.CreateNew);
         await file.CopyToAsync(fs);
 
-        // return hash for database storage
-        return fileNameHash.ToString();
+        // return name for database storage
+        return fileName;
     }
 
     public Task<string> SoftDeleteDocument(string userId, string path)
