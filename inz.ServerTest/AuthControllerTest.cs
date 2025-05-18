@@ -1,8 +1,8 @@
 using inz.Server;
 using inz.Server.Controllers;
-using inz.Server.Dtos;
-using inz.Server.Models;
+using inz.Server.Dtos.Auth;
 using inz.Server.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
@@ -17,25 +17,29 @@ public class AuthControllerTest
     {
         _authService = new Mock<IAuthService>();
         _controller = new AuthController(_authService.Object);
-    }
-
-    [Fact]
-    public async Task LoginUserNotFound_ShouldReturn400()
-    {
-        _authService.Setup(a => a.FindUserByEmailAsync(It.IsAny<string>())).ReturnsAsync(() => null);
-        var req = new LoginReq { Email = "correct@email.com" };
-        var res = await _controller.Login(req);
-        Assert.IsType<BadRequestObjectResult>(res);
+        
+        var mockresponse = new Mock<HttpResponse>();
+        var mockHttpContext = new Mock<HttpContext>();
+        mockHttpContext.Setup(c => c.Response).Returns(mockresponse.Object);
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = mockHttpContext.Object
+        };
     }
 
     [Fact]
     public async Task LoginWrongCredentials_ShouldReturn400()
     {
-        _authService.Setup(um => um.FindUserByEmailAsync(It.IsAny<string>())).ReturnsAsync(new User());
-        _authService.Setup(a => a.VerifyUserAsync(It.IsAny<User>(), It.IsAny<string>())).ReturnsAsync(false);
-        var req = new LoginReq { Email = "correct@email.com" };
+        _authService.Setup(a => a.LoginAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(Result.Failure<LoginResp>(Error.AuthenticationFailed));
+        
+        var req = new LoginReq("correct@email.com", "qwe");
         var res = await _controller.Login(req);
-        Assert.IsType<BadRequestObjectResult>(res);
+        var oRes = res as ObjectResult;
+        
+        Assert.IsType<ObjectResult>(res);
+        Assert.NotNull(oRes);
+        Assert.Equal(StatusCodes.Status400BadRequest, oRes.StatusCode);
     }
 
     [Theory]
@@ -43,36 +47,40 @@ public class AuthControllerTest
     [InlineData("correct@email.com", "password2")]
     public async Task LoginCorrect_ShouldReturn200(string e, string p)
     {
-        _authService.Setup(um => um.FindUserByEmailAsync(It.IsAny<string>())).ReturnsAsync(new User());
-        _authService.Setup(a => a.VerifyUserAsync(It.IsAny<User>(), It.IsAny<string>())).ReturnsAsync(true);
-        var req = new LoginReq { Email = e, Password = p };
+        _authService.Setup(a => a.LoginAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(Result.Success(new LoginResp(It.IsAny<UserDto>(), It.IsAny<string>()))); 
+        
+        var req = new LoginReq(e, p);
         var res = await _controller.Login(req);
 
+        _authService.Verify(a => a.LoginAsync(e, p), Times.Once);
         Assert.IsType<OkObjectResult>(res);
-        _authService.Verify(a => a.GetAuthTokenAsync(It.IsAny<User>()), Times.Once);
-        _authService.Verify(a => a.GetRefreshTokenAsync(It.IsAny<User>()), Times.Once);
     }
 
     [Fact]
-    public async Task RefreshInvalidToken_ShouldReturn400()
+    public async Task RefreshInvalidToken_ShouldReturn401()
     {
-        _authService.Setup(a => a.FindTokenOwnerAsync(It.IsAny<string>())).ReturnsAsync(new User());
         _authService.Setup(a => a.RefreshTokenAsync(It.IsAny<string>()))
-            .ReturnsAsync(Result.Failure<string>(new Error("")));
-        var req = new RefreshReq { Token = "token" };
+            .ReturnsAsync(Result.Failure<RefreshResp>(Error.InvalidToken));
+        
+        var req = new RefreshReq("token");
         var res = await _controller.Refresh(req);
-        Assert.IsType<BadRequestObjectResult>(res);
+        var oRes = res as ObjectResult;
+        
+        Assert.IsType<ObjectResult>(res);
+        Assert.Equal(StatusCodes.Status401Unauthorized, oRes?.StatusCode);
     }
 
     [Fact]
     public async Task RefreshValid_ShouldReturn200()
     {
-        _authService.Setup(a => a.FindTokenOwnerAsync(It.IsAny<string>())).ReturnsAsync(new User());
         _authService.Setup(a => a.RefreshTokenAsync(It.IsAny<string>()))
-            .ReturnsAsync(Result.Success(""));
-        var req = new RefreshReq { Token = "token" };
+            .ReturnsAsync(Result.Success(new RefreshResp(It.IsAny<string>(), It.IsAny<string>())));
+        
+        var req = new RefreshReq("token");
         var res = await _controller.Refresh(req);
+        
+        _authService.Verify(a => a.RefreshTokenAsync(It.IsAny<string>()), Times.Once);
         Assert.IsType<OkObjectResult>(res);
-        _authService.Verify(a => a.GetAuthTokenAsync(It.IsAny<User>()), Times.Once);
     }
 }

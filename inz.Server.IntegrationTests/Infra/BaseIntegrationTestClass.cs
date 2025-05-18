@@ -1,3 +1,6 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http.Headers;
+using System.Security.Claims;
 using inz.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,7 +18,7 @@ public class BaseIntegrationTestClass : IClassFixture<IntegrationTestWebAppFacto
 
     protected BaseIntegrationTestClass(IntegrationTestWebAppFactory factory)
     {
-        Client = factory.CreateClient();
+        Client = WithUserCredentials(factory.CreateClient(), IntegrationTestWebAppFactory.TestUserId);
 
         var scope = factory.Services.CreateScope();
         DbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -23,13 +26,13 @@ public class BaseIntegrationTestClass : IClassFixture<IntegrationTestWebAppFacto
         {
             DbContext.Database.Migrate();
         }
-        
+
         _seeder = new TestDataSeeder(DbContext);
-        
+
         TestDir = factory.TestDir;
         TestUserId = IntegrationTestWebAppFactory.TestUserId;
     }
-    
+
     public Task InitializeAsync()
     {
         return _seeder.SeedData();
@@ -38,5 +41,20 @@ public class BaseIntegrationTestClass : IClassFixture<IntegrationTestWebAppFacto
     public Task DisposeAsync()
     {
         return _seeder.WipeData();
+    }
+    
+    private static HttpClient WithUserCredentials(HttpClient client, string userId)
+    {
+        if (string.IsNullOrEmpty(userId))
+        {
+            return client;
+        }
+
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",
+            MockJwtTokenFactory.GenerateJwtToken([
+                new Claim(JwtRegisteredClaimNames.Sub, userId)
+            ]));
+
+        return client;
     }
 }

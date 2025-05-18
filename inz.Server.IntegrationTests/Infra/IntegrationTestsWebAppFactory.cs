@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Encodings.Web;
 using inz.Server.Data;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -10,8 +11,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.JsonWebTokens;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Testcontainers.PostgreSql;
+using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
 namespace inz.Server.IntegrationTests.Infra;
 
@@ -34,8 +36,17 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
 
             services.AddDbContext<AppDbContext>(options => { options.UseNpgsql(_dbContainer.GetConnectionString()); });
 
-            services.AddAuthentication(options => { options.DefaultScheme = "TestScheme"; })
-                .AddScheme<AuthenticationSchemeOptions, TestAuthenticationHandler>("TestScheme", _ => { });
+            services.Configure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme,
+                options =>
+                {
+                    var config = new OpenIdConnectConfiguration
+                    {
+                        Issuer = MockJwtTokenFactory.Issuer
+                    };
+
+                    config.SigningKeys.Add(MockJwtTokenFactory.SecurityKey);
+                    options.Configuration = config;
+                });
         });
 
         builder.ConfigureAppConfiguration(config =>

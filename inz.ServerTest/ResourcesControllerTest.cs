@@ -5,7 +5,6 @@ using inz.Server.Controllers;
 using inz.Server.Dtos.Resources;
 using inz.Server.Services;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
@@ -18,132 +17,75 @@ public class ResourcesControllerTest
 
     public ResourcesControllerTest()
     {
-        _controller = new ResourcesController(_documentsService.Object);
         var user = new ClaimsPrincipal(new ClaimsIdentity([
             new Claim(JwtRegisteredClaimNames.Sub, "")
         ], "Test"));
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext { User = user }
-        };
+        var contextAccessor = new Mock<IHttpContextAccessor>();
+        contextAccessor.Setup(c => c.HttpContext!.User).Returns(user);
+
+        _controller = new ResourcesController(_documentsService.Object, contextAccessor.Object);
     }
 
     [Fact]
-    public async Task Get_FileNotFound_ShouldReturn404()
+    public async Task Get_ShouldReturnDocList()
     {
-        _documentsService.Setup(d => d.GetFileMetadataById(It.IsAny<string>(), It.IsAny<int>()))
-            .ReturnsAsync(Result.Failure<DocumentDto>(Error.FileNotFound));
+        _documentsService.Setup(d => d.GetFiles(It.IsAny<string>())).ReturnsAsync([]);
 
-        var res = await _controller.Get(It.IsAny<int>());
+        var res = await _controller.Get();
+        var oRes = res as ObjectResult;
+        Assert.IsType<OkObjectResult>(res);
+        Assert.Equal(StatusCodes.Status200OK, oRes!.StatusCode);
+    }
+
+    [Fact]
+    public async Task Download_FileNotFound_ShouldReturn404()
+    {
+        _documentsService.Setup(d => d.GetFileStream(It.IsAny<string>(), It.IsAny<int>()))
+            .ReturnsAsync(Result.Failure<DocumentStreamDto>(Error.FileNotFound));
+
+        var res = await _controller.Download(It.IsAny<int>());
         var nfRes = res as ObjectResult;
         Assert.IsType<ObjectResult>(res);
         Assert.Equal(StatusCodes.Status404NotFound, nfRes!.StatusCode);
     }
 
     [Fact]
-    public async Task Get_FileFound_ShouldReturn200()
+    public async Task Download_FileFound_ShouldReturn200()
     {
-        _documentsService.Setup(d => d.GetFileMetadataById(It.IsAny<string>(), It.IsAny<int>()))
-            .ReturnsAsync(new DocumentDto());
+        var mockStream = new Mock<Stream>().Object;
+        _documentsService.Setup(d => d.GetFileStream(It.IsAny<string>(), It.IsAny<int>()))
+            .ReturnsAsync(Result.Success(new DocumentStreamDto(mockStream,"")));
 
-        var res = await _controller.Get(It.IsAny<int>());
-        var okRes = res as OkObjectResult;
-        Assert.IsType<OkObjectResult>(res);
-        Assert.IsType<DocumentDto>(okRes!.Value);
-    }
-
-    [Fact]
-    public async Task GetByName_FileNotFound_ShouldReturn404()
-    {
-        _documentsService.Setup(d => d.GetFileMetadata(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(Result.Failure<DocumentDto>(Error.FileNotFound));
-
-        var req = new GetFileReq { FileName = "" };
-        var res = await _controller.Get(req);
-
-        var nfRes = res as ObjectResult;
-        Assert.IsType<ObjectResult>(res);
-        Assert.Equal(StatusCodes.Status404NotFound, nfRes!.StatusCode);
-    }
-
-    [Fact]
-    public async Task GetByName_FileFound_ShouldReturn200()
-    {
-        _documentsService.Setup(d => d.GetFileMetadata(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(new DocumentDto());
-
-        var req = new GetFileReq { FileName = "" };
-        var res = await _controller.Get(req);
-
-        var okRes = res as OkObjectResult;
-        Assert.IsType<OkObjectResult>(res);
-        Assert.IsType<DocumentDto>(okRes!.Value);
-    }
-
-    [Fact]
-    public async Task GetAll_ShouldReturn200()
-    {
-        _documentsService.Setup(d => d.GetFilesForUser(It.IsAny<string>())).ReturnsAsync([]);
-
-        var res = await _controller.GetAll();
-        var okRes = res as OkObjectResult;
-        Assert.IsType<OkObjectResult>(res);
-        Assert.IsType<List<DocumentDto>>(okRes!.Value);
-    }
-
-    [Fact]
-    public async Task GetFile_FileNotFound_ShouldReturn404()
-    {
-        _documentsService.Setup(d => d.GetFile(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(Result.Failure<Stream>(Error.FileNotFound));
-
-        var req = new GetFileReq { FileName = "" };
-        var res = await _controller.GetFile(req);
-
-        var nfRes = res as ObjectResult;
-        Assert.IsType<ObjectResult>(res);
-        Assert.Equal(StatusCodes.Status404NotFound, nfRes!.StatusCode);
-    }
-
-    [Fact]
-    public async Task GetFile_FileFound_ShouldReturn200()
-    {
-        var fs = new Mock<FileStream>(new IntPtr(1), FileAccess.Read);
-        _documentsService.Setup(d => d.GetFile(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(fs.Object);
-
-        var req = new GetFileReq { FileName = "" };
-        var res = await _controller.GetFile(req);
-
-        var fsRes = res as FileStreamResult;
+        var res = await _controller.Download(It.IsAny<int>());
         Assert.IsType<FileStreamResult>(res);
-        Assert.NotNull(fsRes!.FileStream);
     }
 
     [Fact]
     public async Task Create_ShouldReturn201()
     {
-        _documentsService.Setup(d => d.SaveDocument(It.IsAny<string>(), It.IsAny<IFormFile>()))
+        _documentsService.Setup(d => d.SaveDocument(It.IsAny<string>(), It.IsAny<IFormFile>(), It.IsAny<string>()))
             .ReturnsAsync(new DocumentDto());
 
-        var res = await _controller.Create(It.IsAny<IFormFile>());
-        
+        var req = new CreateFileReq(It.IsAny<IFormFile>(), It.IsAny<string>());
+        var res = await _controller.Create(req);
+
         var okRes = res as CreatedResult;
         Assert.IsType<CreatedResult>(res);
         Assert.IsType<DocumentDto>(okRes!.Value);
     }
 
     [Fact]
-    public async Task Create_DuplicateShouldReturn400()
+    public async Task Create_DuplicateShouldReturn409()
     {
-        _documentsService.Setup(d => d.SaveDocument(It.IsAny<string>(), It.IsAny<IFormFile>()))
+        _documentsService.Setup(d => d.SaveDocument(It.IsAny<string>(), It.IsAny<IFormFile>(), It.IsAny<string>()))
             .ReturnsAsync(Result.Failure<DocumentDto>(Error.FileAlreadyExists));
-        
-        var res = await _controller.Create(It.IsAny<IFormFile>());
-        
-        var badRequestRes = res as ObjectResult;
+
+        var req = new CreateFileReq(It.IsAny<IFormFile>(), It.IsAny<string>());
+        var res = await _controller.Create(req);
+        var confRes = res as ObjectResult;
+
         Assert.IsType<ObjectResult>(res);
-        Assert.Equal(StatusCodes.Status500InternalServerError, badRequestRes!.StatusCode);
+        Assert.Equal(StatusCodes.Status409Conflict, confRes!.StatusCode);
     }
 
     [Fact]
@@ -151,7 +93,7 @@ public class ResourcesControllerTest
     {
         _documentsService.Setup(d => d.DeleteDocument(It.IsAny<string>(), It.IsAny<int>()))
             .ReturnsAsync(Result.Failure<FileStream>(Error.FileNotFound));
-        
+
         var res = await _controller.Delete(It.IsAny<int>());
 
         var nfRes = res as ObjectResult;
@@ -164,9 +106,9 @@ public class ResourcesControllerTest
     {
         _documentsService.Setup(d => d.DeleteDocument(It.IsAny<string>(), It.IsAny<int>()))
             .ReturnsAsync(Result.Success());
-        
+
         var res = await _controller.Delete(It.IsAny<int>());
-        
+
         Assert.IsType<NoContentResult>(res);
     }
 
@@ -184,15 +126,15 @@ public class ResourcesControllerTest
     }
 
     [Fact]
-    public async Task Restore_FileAlreadyFound_ShouldReturn404()
+    public async Task Restore_FileAlreadyFound_ShouldReturn409()
     {
         _documentsService.Setup(d => d.RestoreDocument(It.IsAny<string>(), It.IsAny<int>()))
             .ReturnsAsync(Result.Failure(Error.FileAlreadyExists));
 
         var res = await _controller.Restore(It.IsAny<int>());
 
-        var nfRes = res as ObjectResult;
+        var confRes = res as ObjectResult;
         Assert.IsType<ObjectResult>(res);
-        Assert.Equal(StatusCodes.Status404NotFound, nfRes!.StatusCode);
+        Assert.Equal(StatusCodes.Status409Conflict, confRes!.StatusCode);
     }
 }

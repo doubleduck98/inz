@@ -16,7 +16,7 @@ public class DocumentsTests : BaseIntegrationTestClass
     public async Task Create_ShouldAddNewDocument()
     {
         var formData = await FormFactory.GetFormDataWithFile();
-
+        
         var resp = await Client.PostAsync("/Resources/Create", formData);
         resp.EnsureSuccessStatusCode();
         var doc = JsonConvert.DeserializeObject<DocumentDto>(await resp.Content.ReadAsStringAsync());
@@ -42,7 +42,7 @@ public class DocumentsTests : BaseIntegrationTestClass
         Assert.True(Directory.Exists(Path.Combine(TestDir, TestUserId)));
 
         var resp2 = await Client.PostAsync("/Resources/Create", formData);
-        Assert.Equal(HttpStatusCode.InternalServerError, resp2.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, resp2.StatusCode);
         var allDocs = await DbContext.Documents.ToListAsync();
         Assert.Single(allDocs);
         var doc2 = allDocs.Single();
