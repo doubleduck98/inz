@@ -1,6 +1,8 @@
 using inz.Server.Dtos.Auth;
 using inz.Server.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,10 +24,10 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginReq model)
     {
         var res = await _auth.LoginAsync(model.Email, model.Password);
-        if (res.IsFailure) return Problem(res.Error!.Message, statusCode: StatusCodes.Status400BadRequest);
+        if (res.IsFailure) return Problem(res.Error!.Message, type: res.Error!.Type, statusCode: res.Error!.Code);
 
-        _auth.SetCookie(HttpContext.Response, res.Value!.Token);
-        return Ok(res.Value!.User);
+        _auth.SetCookie(HttpContext.Response, res.Value.Token);
+        return Ok(res.Value.User);
     }
 
     [HttpGet]
@@ -34,7 +36,7 @@ public class AuthController : ControllerBase
     {
         var userId = HttpContext.User.FindFirst("userId");
         var res = await _auth.LoginWithToken(userId!.Value);
-        
+
         _auth.SetCookie(HttpContext.Response, res.Token);
         return Ok(res.User);
     }
@@ -45,25 +47,27 @@ public class AuthController : ControllerBase
         var res = await _auth.RefreshTokenAsync(model.Token);
         if (res.IsFailure) return Problem(res.Error!.Message, statusCode: StatusCodes.Status400BadRequest);
 
-        _auth.SetCookie(HttpContext.Response, res.Value!.Token);
+        _auth.SetCookie(HttpContext.Response, res.Value.Token);
         return Ok(new { res.Value.RefreshToken });
     }
 
-    [Authorize]
     [HttpPost]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public async Task<IActionResult> Logout([FromBody] LogoutReq model)
     {
-        var userId = HttpContext.User.FindFirst("Sub");
-        var res = await _auth.InvalidateUserTokenAsync(userId!.Value, model.Token);
+        var userId = HttpContext.User.FindFirst("Sub")?.Value ??
+                     throw new AuthenticationFailureException("User id claim not found");
+        var res = await _auth.InvalidateUserTokenAsync(userId, model.Token);
         return res.IsSuccess ? Ok() : BadRequest(res.Error!.Message);
     }
 
-    [Authorize]
     [HttpPost]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public async Task<IActionResult> Revoke()
     {
-        var userId = HttpContext.User.FindFirst("Sub");
-        await _auth.InvalidateAllUserTokensAsync(userId!.Value);
+        var userId = HttpContext.User.FindFirst("Sub")?.Value ??
+                     throw new AuthenticationFailureException("User id claim not found");
+        await _auth.InvalidateAllUserTokensAsync(userId);
         return Ok();
     }
 }

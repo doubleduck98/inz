@@ -78,7 +78,7 @@ public class DocumentsService : IDocumentsService
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return Result.Failure<DocumentDto>(new Error(e.ToString()));
+            return Result.Failure<DocumentDto>(new Error("File.ERROR", e.ToString(), 500));
         }
 
         var user = await _db.Users.SingleAsync(u => u.Id == userId);

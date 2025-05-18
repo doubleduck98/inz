@@ -29,21 +29,39 @@ public class Result
 
 public class Result<T> : Result
 {
-    public T? Value { get; }
+    private readonly T? _value;
 
-    protected internal Result(T? value, bool isSuccess, Error? error) : base(isSuccess, error) => Value = value;
+    public T Value
+    {
+        get
+        {
+            if (_value == null) throw new InvalidOperationException("Can't access value of failusre result");
+            return _value;
+        }
+    }
+
+    protected internal Result(T? value, bool isSuccess, Error? error) : base(isSuccess, error) => _value = value;
 
     public static implicit operator Result<T>(T value) => new(value, true, null);
 }
 
-public record Error(string Message)
+public record Error(string Type, string Message, int Code)
 {
-    public static readonly Error AuthenticationFailed = new("Authentication failed");
-    
-    public static readonly Error TokenExpired = new("Token expired");
-    public static readonly Error InvalidToken = new("Invalid token");
+    public static readonly Error AuthenticationFailed =
+        new("Auth.AUTH_FAILED", "Authentication failed", StatusCodes.Status400BadRequest);
 
-    public static readonly Error FileNotFound = new("File not found");
-    public static readonly Error FileAlreadyExists = new("File already exists");
-    public static readonly Error FileNotPresent = new("File not present on server");
+    public static readonly Error TokenExpired =
+        new("Auth.TOKEN_EXPIRED", "Token expired", StatusCodes.Status401Unauthorized);
+
+    public static readonly Error InvalidToken =
+        new("Auth.INVALID_TOKEN", "Invalid token", StatusCodes.Status401Unauthorized);
+
+    public static readonly Error FileNotFound =
+        new("File.NOT_FOUND", "File not found", StatusCodes.Status404NotFound);
+
+    public static readonly Error FileAlreadyExists =
+        new("File.ALREADY_EXISTS", "File already exists", StatusCodes.Status409Conflict);
+
+    public static readonly Error FileNotPresent =
+        new("File.NOT_PRESENT", "File not present on server", StatusCodes.Status500InternalServerError);
 }

@@ -1,5 +1,6 @@
 using inz.Server.Dtos.Resources;
 using inz.Server.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,77 +14,75 @@ namespace inz.Server.Controllers;
 public class ResourcesController : ControllerBase
 {
     private readonly IDocumentsService _docs;
+    private readonly string _userId;
 
     public ResourcesController([FromServices] IDocumentsService documents)
     {
+        _userId = HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ??
+                  throw new AuthenticationFailureException("User id claim not found");
         _docs = documents;
+    }
+
+    private IActionResult ResultResponse(Result result, IActionResult successResp)
+    {
+        return result.IsSuccess
+            ? successResp
+            : Problem(result.Error!.Message, type: result.Error.Type, statusCode: result.Error.Code);
     }
 
     [HttpGet]
     public async Task<IActionResult> Get([FromBody] GetFileReq req)
     {
-        var userId = HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value;
-        var res = await _docs.GetFileMetadata(userId, req.FileName);
-        return res.IsSuccess ? Ok(res.Value) : Problem(res.Error!.Message, statusCode: 404);
+        var res = await _docs.GetFileMetadata(_userId, req.FileName);
+        return ResultResponse(res, Ok(res.Value));
     }
 
-    [HttpGet]
-    [Route("{id:int}")]
+    [HttpGet("{id:int}")]
     public async Task<IActionResult> Get(int id)
     {
-        var userId = HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value;
-        var res = await _docs.GetFileMetadataById(userId, id);
-        return res.IsSuccess ? Ok(res.Value) : Problem(res.Error!.Message, statusCode: 404);
+        var res = await _docs.GetFileMetadataById(_userId, id);
+        return ResultResponse(res, Ok(res.Value));
     }
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var userId = HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value;
-        var docs = await _docs.GetFilesForUser(userId);
+        var docs = await _docs.GetFilesForUser(_userId);
         return Ok(docs);
     }
 
     [HttpGet]
     public async Task<IActionResult> GetFile([FromBody] GetFileReq req)
     {
-        var userId = HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value;
-        var res = await _docs.GetFile(userId, req.FileName);
-        return res.IsSuccess
-            ? File(res.Value!, "application/octet-stream", req.FileName)
-            : Problem(res.Error!.Message, statusCode: 404);
+        var res = await _docs.GetFile(_userId, req.FileName);
+        return ResultResponse(res, File(res.Value, "application/octet-stream", req.FileName));
     }
 
     [HttpPost]
     public async Task<IActionResult> Create([FromForm] IFormFile file)
     {
-        var userId = HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value;
-        var res = await _docs.SaveDocument(userId, file);
-        return res.IsSuccess ? Created($"/{res.Value!.Id}", res.Value) : Problem(res.Error?.Message);
+        var res = await _docs.SaveDocument(_userId, file);
+        return ResultResponse(res, Created($"/{res.Value.Id}", res.Value));
     }
 
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Edit(int id, [FromBody] EditFileReq req)
     {
-        var userId = HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value;
-        var res = await _docs.EditDocument(userId, id, req.FileName);
-        return res.IsSuccess ? Ok() : Problem(res.Error!.Message, statusCode: 404);
+        var res = await _docs.EditDocument(_userId, id, req.FileName);
+        return ResultResponse(res, Ok());
     }
 
-    [HttpDelete]
-    [Route("{id:int}")]
+    [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var userId = HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value;
-        var res = await _docs.DeleteDocument(userId, id);
-        return res.IsSuccess ? NoContent() : Problem(res.Error!.Message, statusCode: 404);
+        var res = await _docs.DeleteDocument(_userId, id);
+        return ResultResponse(res, NoContent());
     }
 
     [HttpPost("{id:int}")]
     public async Task<IActionResult> Restore(int id)
     {
-        var userId = HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value;
-        var res = await _docs.RestoreDocument(userId, id);
-        return res.IsSuccess ? Ok() : Problem(res.Error!.Message, statusCode: 404);
+        var res = await _docs.RestoreDocument(_userId, id);
+        return ResultResponse(res, Ok());
     }
 }
