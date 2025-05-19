@@ -1,13 +1,27 @@
 import { useEffect, useState } from 'react';
 import { Doc } from '../../types/Doc';
-import { Button, ScrollArea, TextInput } from '@mantine/core';
+import {
+  Box,
+  Button,
+  CloseButton,
+  Collapse,
+  Container,
+  Grid,
+  TextInput,
+} from '@mantine/core';
 import axiosInstance from '../../Axios';
-import { IconSearch } from '@tabler/icons-react';
+import {
+  IconChevronDown,
+  IconChevronUp,
+  IconSearch,
+} from '@tabler/icons-react';
 import { sortData } from './utils/TableUtils';
 import DocsTable from './DocsTable/DocsTable';
 import { useDisclosure } from '@mantine/hooks';
 import UploadModal from './UploadModal/UploadModal';
 import { useForm } from '@mantine/form';
+import TableButtons from './DocsTable/TableButtons';
+import { AxiosResponse } from 'axios';
 
 interface FormValues {
   file: File | null;
@@ -23,6 +37,7 @@ const Docs = () => {
   const [sortBy, setSortBy] = useState<keyof Doc | null>(null);
   const [reverseSortDirection, setReverseSortDirection] = useState(false);
 
+  const [collapsed, { toggle: toggleCollapse }] = useDisclosure(false);
   const [modalOpened, { open: openModal, close: closeModal }] =
     useDisclosure(false);
 
@@ -54,16 +69,23 @@ const Docs = () => {
     );
   };
 
+  const handleSearchClear = () => {
+    setSearch('');
+    setSortedData(
+      sortData(docs, { sortBy, reversed: reverseSortDirection, search: '' })
+    );
+  };
+
   const getDocuments = async () => {
     const opts = {
-      url: 'Resources/GetAll',
+      url: 'Resources/Get',
       method: 'GET',
       headers: { 'content-type': 'application/json' },
       withCredentials: true,
     };
 
     try {
-      const { data } = await axiosInstance.request(opts);
+      const { data }: AxiosResponse<Doc[]> = await axiosInstance.request(opts);
       setDocs(data);
     } catch (error) {
       console.log(error);
@@ -120,40 +142,119 @@ const Docs = () => {
     }
   };
 
+  const handleDelete = async (id: number) => {
+    const opts = {
+      url: `Resources/Delete/${id}`,
+      method: 'DELETE',
+      withCredentials: true,
+    };
+
+    try {
+      await axiosInstance.request(opts);
+      setDocs(docs.filter((d) => d.id !== id));
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const handleDeleteSelection = async () => {
+    const opts = {
+      url: `Resources/Delete/`,
+      method: 'DELETE',
+      withCredentials: true,
+      data: {
+        ids: selection,
+      },
+    };
+
+    try {
+      await axiosInstance.request(opts);
+      setDocs(docs.filter((d) => !selection.includes(d.id)));
+      setSelection([]);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
   return (
-    <ScrollArea>
-      <TextInput
-        placeholder="Search by any field"
-        mb="md"
-        leftSection={<IconSearch size={16} stroke={1.5} />}
-        value={search}
-        onChange={handleSearchChange}
-      />
-      <DocsTable
-        docs={docs}
-        sortedData={sortedData}
-        selection={selection}
-        toggleRow={toggleRow}
-        toggleAll={toggleAll}
-        sortBy={sortBy}
-        reverseSortDirection={reverseSortDirection}
-        setSorting={setSorting}
-        onDownload={() => {}}
-        onDelete={() => {}}
-      />
+    <>
+      <Container fluid>
+        <Box hiddenFrom="sm" my={12}>
+          <Button
+            variant="default"
+            onClick={toggleCollapse}
+            fullWidth
+            rightSection={
+              collapsed ? (
+                <IconChevronUp size={18} />
+              ) : (
+                <IconChevronDown size={18} />
+              )
+            }
+          />
+          <Collapse in={collapsed}>
+            <Box pt={12}>
+              <TableButtons
+                selection={selection}
+                openModal={openModal}
+                onDeleteSelection={handleDeleteSelection}
+              />
+            </Box>
+          </Collapse>
+        </Box>
+
+        <Grid overflow="hidden">
+          <Grid.Col span="auto" order={{ base: 2, sm: 1 }}>
+            <TextInput
+              placeholder="Wyszukaj po dowolnym polu"
+              mb="md"
+              leftSection={<IconSearch size={16} stroke={1.5} />}
+              value={search}
+              onChange={handleSearchChange}
+              rightSection={
+                <CloseButton
+                  aria-label="Clear input"
+                  onClick={handleSearchClear}
+                  style={{ display: search ? undefined : 'none' }}
+                />
+              }
+            />
+            <DocsTable
+              docs={docs}
+              sortedData={sortedData}
+              selection={selection}
+              toggleRow={toggleRow}
+              toggleAll={toggleAll}
+              sortBy={sortBy}
+              reverseSortDirection={reverseSortDirection}
+              setSorting={setSorting}
+              onDelete={handleDelete}
+            />
+          </Grid.Col>
+          <Grid.Col
+            span={{ base: 12, sm: 'content' }}
+            miw={150}
+            order={{ base: 1, sm: 2 }}
+            visibleFrom="sm"
+          >
+            <TableButtons
+              openModal={openModal}
+              selection={selection}
+              onDeleteSelection={handleDeleteSelection}
+            />
+          </Grid.Col>
+        </Grid>
+      </Container>
 
       <UploadModal
         opened={modalOpened}
         onClose={closeModal}
         onSubmit={form.onSubmit(handleUpload)}
         inputProps={form.getInputProps}
-        submitDisabled={!form.values.file}
+        fileChosen={!form.values.file}
         onFileChange={onFileChange}
       />
-      <Button variant="default" onClick={openModal}>
-        Wyslij plik
-      </Button>
-    </ScrollArea>
+    </>
   );
 };
 

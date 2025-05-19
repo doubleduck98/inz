@@ -12,7 +12,6 @@ interface DocsTableProps {
   sortBy: keyof Doc | null;
   reverseSortDirection: boolean;
   setSorting: (field: keyof Doc) => void;
-  onDownload: (id: number) => void;
   onDelete: (id: number) => void;
 }
 
@@ -25,7 +24,6 @@ const DocsTable = ({
   sortBy,
   reverseSortDirection,
   setSorting,
-  onDownload,
   onDelete,
 }: DocsTableProps) => {
   const sortedDocs = sortedData.map((doc) => (
@@ -34,7 +32,6 @@ const DocsTable = ({
       doc={doc}
       selected={selection.includes(doc.id)}
       onToggle={() => toggleRow(doc.id)}
-      onDownload={onDownload}
       onDelete={onDelete}
     />
   ));
