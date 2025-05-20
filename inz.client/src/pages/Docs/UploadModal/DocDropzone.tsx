@@ -45,9 +45,7 @@ const DocDropzone = ({ onDrop }: DocDropzoneProps) => {
 
           <Text ta="center" fw={700} fz="lg" mt="xl">
             <Dropzone.Accept>Upuść plik</Dropzone.Accept>
-            <Dropzone.Reject>
-              Tylko pliki MS Word i <i>.pdf</i>
-            </Dropzone.Reject>
+            <Dropzone.Reject>Tylko pliki MS Word i PDF</Dropzone.Reject>
             <Dropzone.Idle>Prześlij plik</Dropzone.Idle>
           </Text>
 

@@ -39,3 +39,15 @@ export const filterData = (data: Doc[], search: string) => {
     })
   );
 };
+
+/**
+ *  polska jezyk trudna jezyk
+ */
+export const pliki = (x: number) => {
+  if (x === 1) return 'plik';
+  const ost = x % 10;
+  const ostDwa = x % 100;
+  if (ostDwa >= 12 && ostDwa <= 14) return 'plików';
+  if (ost >= 2 && ost <= 4) return 'pliki';
+  return 'plików';
+};

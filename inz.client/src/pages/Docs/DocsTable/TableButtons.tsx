@@ -1,21 +1,39 @@
-import { Stack, Button } from '@mantine/core';
+import { Stack, Button, Text } from '@mantine/core';
+import { modals } from '@mantine/modals';
 import {
   IconCloudUpload,
   IconCloudDownload,
   IconTrashX,
 } from '@tabler/icons-react';
+import { pliki } from '../utils/TableUtils';
 
 interface TableButtonsProps {
   openModal: () => void;
   selection: number[];
+  onDownloadSelection: () => void;
   onDeleteSelection: () => void;
 }
 
 const TableButtons = ({
   selection,
   openModal,
+  onDownloadSelection,
   onDeleteSelection,
 }: TableButtonsProps) => {
+  const handleDeleteSelection = () => {
+    modals.openConfirmModal({
+      title: 'Potwierdź usunięcie',
+      children: (
+        <Text size="sm">
+          Czy chcesz usunąć {selection.length} {pliki(selection.length)}?
+        </Text>
+      ),
+      labels: { confirm: 'Usuń', cancel: 'Anuluj' },
+      confirmProps: { color: 'red' },
+      onConfirm: () => onDeleteSelection(),
+    });
+  };
+
   return (
     <Stack gap="xs">
       <Button
@@ -34,6 +52,7 @@ const TableButtons = ({
         variant="default"
         disabled={selection.length === 0}
         justify="space-between"
+        onClick={onDownloadSelection}
       >
         Pobierz
       </Button>
@@ -43,7 +62,7 @@ const TableButtons = ({
         variant="default"
         disabled={selection.length === 0}
         justify="space-between"
-        onClick={onDeleteSelection}
+        onClick={handleDeleteSelection}
       >
         Usuń
       </Button>
