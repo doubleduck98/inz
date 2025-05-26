@@ -48,7 +48,7 @@ public class ResourcesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> Download([FromBody] DownloadReq req)
+    public async Task<IActionResult> Download([FromQuery] DownloadReq req)
     {
         var res = await _docs.GetFileArchive(UserId, req.Ids);
         return res.IsSuccess

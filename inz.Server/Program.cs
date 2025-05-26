@@ -69,6 +69,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDocumentsService, DocumentsService>();
 builder.Services.AddScoped<IDocumentsRepository, LocalDocumentsRepository>();
+builder.Services.AddScoped<IPatientsService, PatientsService>();
 
 builder.Services.AddHttpContextAccessor();
 

@@ -20,6 +20,8 @@ namespace inz.Server.Migrations
                 .HasAnnotation("ProductVersion", "9.0.3")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "btree_gin");
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -184,6 +186,9 @@ namespace inz.Server.Migrations
                     b.Property<string>("OwnerId")
                         .HasColumnType("text");
 
+                    b.Property<int?>("PatientId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("SourcePath")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -197,7 +202,121 @@ namespace inz.Server.Migrations
 
                     b.HasIndex("OwnerId");
 
+                    b.HasIndex("PatientId");
+
                     b.ToTable("Documents", (string)null);
+                });
+
+            modelBuilder.Entity("inz.Server.Models.Patient", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Apartment")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("CoordinatingUserId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("Dob")
+                        .HasColumnType("Date");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("House")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Province")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Street")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Surname")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("ZipCode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id")
+                        .HasName("PK_PatientId");
+
+                    b.HasIndex("CoordinatingUserId");
+
+                    b.HasIndex("Id")
+                        .IsUnique();
+
+                    b.HasIndex("Name", "Surname")
+                        .HasDatabaseName("IX_PatientNameSurname");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Name", "Surname"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Name", "Surname"), new[] { "gin_trgm_ops" });
+
+                    b.ToTable("Patients", (string)null);
+                });
+
+            modelBuilder.Entity("inz.Server.Models.PatientContact", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("PatientId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id")
+                        .HasName("PK_PatientContactId");
+
+                    b.HasIndex("Id");
+
+                    b.HasIndex("PatientId");
+
+                    b.ToTable("PatientContacts", (string)null);
                 });
 
             modelBuilder.Entity("inz.Server.Models.RefreshToken", b =>
@@ -359,7 +478,35 @@ namespace inz.Server.Migrations
                         .HasForeignKey("OwnerId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("inz.Server.Models.Patient", "Patient")
+                        .WithMany("Documents")
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Patient");
+
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("inz.Server.Models.Patient", b =>
+                {
+                    b.HasOne("inz.Server.Models.User", "CoordinatingUser")
+                        .WithMany("Patients")
+                        .HasForeignKey("CoordinatingUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CoordinatingUser");
+                });
+
+            modelBuilder.Entity("inz.Server.Models.PatientContact", b =>
+                {
+                    b.HasOne("inz.Server.Models.Patient", "Patient")
+                        .WithMany("Contacts")
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
                 });
 
             modelBuilder.Entity("inz.Server.Models.RefreshToken", b =>
@@ -373,9 +520,18 @@ namespace inz.Server.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("inz.Server.Models.Patient", b =>
+                {
+                    b.Navigation("Contacts");
+
+                    b.Navigation("Documents");
+                });
+
             modelBuilder.Entity("inz.Server.Models.User", b =>
                 {
                     b.Navigation("Documents");
+
+                    b.Navigation("Patients");
 
                     b.Navigation("RefreshTokens");
                 });

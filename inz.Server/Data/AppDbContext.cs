@@ -15,8 +15,15 @@ public class AppDbContext : IdentityDbContext<User>
         base.OnModelCreating(builder);
         builder.ApplyConfiguration(new RefreshTokenConfiguration());
         builder.ApplyConfiguration(new DocumentConfiguration());
+        builder.ApplyConfiguration(new PatientConfiguration());
+        builder.ApplyConfiguration(new PatientContactConfiguraation());
+        
+        // for { Patient.Name, Patient Surname } index
+        builder.HasPostgresExtension("pg_trgm");
+        builder.HasPostgresExtension("btree_gin");
     }
 
     public DbSet<Document> Documents { get; set; }
-    public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<Patient> Patients { get; set; }
 }
