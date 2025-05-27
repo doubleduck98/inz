@@ -5,6 +5,7 @@ import LoginForm from './LoginForm';
 import Test from './Test';
 import Home from './Home';
 import Docs from './pages/Docs/Docs';
+import Patients from './pages/Patients/Patients';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
             <Route index element={<Home />} />
             <Route path="test" element={<Test />} />
             <Route path="docs" element={<Docs />} />
+            <Route path="patients" element={<Patients />} />
           </Route>
         </Route>
       </Routes>

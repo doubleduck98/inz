@@ -2,16 +2,20 @@ import {
   IconDevicesQuestion,
   IconFileText,
   IconHome,
+  IconLogout,
+  IconUsers,
 } from '@tabler/icons-react';
 import { AppShell, Burger, Group } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import classes from './Layout.module.css';
+import { useAuth } from './hooks/useAuth';
 
 const linkData = [
   { link: '/', label: 'Home', icon: IconHome },
+  { link: '/patients', label: 'Pacjenci', icon: IconUsers },
   { link: '/docs', label: 'Dokumenty', icon: IconFileText },
-  { link: '/test', label: 'Test', icon: IconDevicesQuestion },
+  { link: '/test', label: 'Sale', icon: IconDevicesQuestion },
 ];
 
 function Layout() {
@@ -21,6 +25,8 @@ function Layout() {
 
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
+
+  const { logout } = useAuth();
 
   const navigate = useNavigate();
   const links = linkData.map((l) => (
@@ -89,10 +95,16 @@ function Layout() {
           <div className={classes.navbarMain} onClick={closeMobile}>
             {links}
           </div>
+          <div className={classes.footer}>
+            <a className={classes.link} onClick={logout}>
+              <IconLogout className={classes.linkIcon} stroke={1.5} />
+              <span>Wyloguj się</span>
+            </a>
+          </div>
         </AppShell.Navbar>
       )}
 
-      <AppShell.Main>
+      <AppShell.Main pt={{ base: 52, sm: 66 }} pb="0px">
         <Outlet />
       </AppShell.Main>
     </AppShell>

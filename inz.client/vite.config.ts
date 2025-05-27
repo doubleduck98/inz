@@ -110,6 +110,14 @@ export default defineConfig({
         target,
         secure: false,
       },
+      '^/LoginPage': {
+        target,
+        secure: false,
+      },
+      '^/Patients': {
+        target,
+        secure: false,
+      },
     },
     port: 5173,
     https: {

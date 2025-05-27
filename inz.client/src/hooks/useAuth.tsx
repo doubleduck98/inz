@@ -2,9 +2,11 @@
 import { createContext, ReactNode, useContext, useEffect } from 'react';
 import { useState } from 'react';
 import { User } from '../types/User';
+import axios from 'axios';
 
 interface AuthContextType {
   user: User | null;
+  loading: boolean;
   login: (u: User) => void;
   logout: () => void;
 }
@@ -24,21 +26,51 @@ export const Authorize = ({ children }: Props) => {
     localStorage.setItem('user', JSON.stringify(u));
   };
 
-  const logout = () => {
+  const logout = async () => {
     setUser(null);
     localStorage.removeItem('user');
+    window.location.replace('https://localhost:7258/Account/Logout');
+  };
+
+  const getToken = async () => {
+    try {
+      const opts = {
+        url: 'Auth/GetToken',
+        method: 'Get',
+        headers: { 'content-type': 'application/json' },
+        withCredentials: true,
+      };
+
+      const { data } = await axios.request(opts);
+      setUser(data);
+      localStorage.setItem('user', JSON.stringify(data));
+    } catch (error) {
+      console.log(error);
+      setUser(null);
+      localStorage.removeItem('user');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     const _user = localStorage.getItem('user');
-    if (_user) setUser(JSON.parse(_user));
-    setLoading(false);
+    if (_user) {
+      try {
+        setUser(JSON.parse(_user));
+        setLoading(false);
+      } catch (e) {
+        console.log(e);
+        localStorage.removeItem('user');
+        getToken();
+      }
+    } else {
+      getToken();
+    }
   }, []);
 
-  if (loading) return <div>Loading...</div>;
-
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

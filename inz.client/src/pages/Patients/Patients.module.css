@@ -1,0 +1,13 @@
+.drawerHeader {
+  padding: 3%;
+  padding-right: 3%;
+  padding-left: 3%;
+  min-height: 2.5rem;
+}
+
+.root {
+  @media (max-width: $mantine-breakpoint-sm) {
+    --stepper-icon-size: 2rem;
+    --stepper-fz: small;
+  }
+}
