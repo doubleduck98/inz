@@ -16,16 +16,12 @@ import {
   IconSearch,
 } from '@tabler/icons-react';
 import DocsTable from './DocsTable/DocsTable';
-import { useDisclosure } from '@mantine/hooks';
+import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
 import UploadModal from './UploadModal/UploadModal';
-import { useForm } from '@mantine/form';
 import TableButtons from './DocsTable/TableButtons';
 import useDocsTable from './DocsTable/useDocsTable';
-
-interface FormValues {
-  file: File | null;
-  fileName: string;
-}
+import { UploadFormProvider, useUploadForm } from './UploadFormContext';
+import { Paitent } from '../../types/Patient';
 
 const Docs = () => {
   const [docs, setDocs] = useState<Doc[]>([]);
@@ -45,6 +41,13 @@ const Docs = () => {
   const [collapsed, { toggle: toggleCollapse }] = useDisclosure(false);
   const [modalOpened, { open: openModal, close: closeModal }] =
     useDisclosure(false);
+
+  const [patients, setPatients] = useState<Paitent[]>([]);
+  const [searchPatients, setSearchPatients] = useState('');
+  const [searchDebounced] = useDebouncedValue(searchPatients, 500, {
+    leading: true,
+  });
+  const [loadingPatients, setLoadingPatients] = useState(false);
 
   const getDocuments = async () => {
     const opts = {
@@ -66,13 +69,15 @@ const Docs = () => {
     getDocuments();
   }, []);
 
-  const form = useForm<FormValues>({
+  const form = useUploadForm({
     initialValues: {
+      patientId: '',
       file: null,
       fileName: '',
     },
 
     validate: {
+      patientId: (val) => (val ? null : 'Proszę wybrać pacjenta'),
       file: (val) => (val ? null : 'Proszę wybrać plik'),
       fileName: (val) => {
         if (!val.length) return 'Proszę podać nazwę';
@@ -86,6 +91,31 @@ const Docs = () => {
     if (file) form.setValues({ fileName: file.name, file: file });
     else form.setValues({ file: file });
   };
+
+  useEffect(() => {
+    const handleSearch = async () => {
+      const opts = {
+        url: 'Patients/Get',
+        method: 'GET',
+        withCredentials: true,
+        params: {
+          search: searchDebounced,
+        },
+      };
+
+      try {
+        setLoadingPatients(true);
+        const { data } = await axiosInstance.request(opts);
+        setPatients(data);
+      } catch (e) {
+        console.log(e);
+      } finally {
+        setLoadingPatients(false);
+      }
+    };
+
+    handleSearch();
+  }, [searchDebounced]);
 
   const handleUpload = async () => {
     const formData = new FormData();
@@ -249,14 +279,20 @@ const Docs = () => {
         </Grid>
       </Container>
 
-      <UploadModal
-        opened={modalOpened}
-        onClose={closeModal}
-        onSubmit={form.onSubmit(handleUpload)}
-        inputProps={form.getInputProps}
-        fileChosen={!form.values.file}
-        onFileChange={onFileChange}
-      />
+      <UploadFormProvider form={form}>
+        <UploadModal
+          opened={modalOpened}
+          onClose={closeModal}
+          onSubmit={form.onSubmit(handleUpload)}
+          onFileChange={onFileChange}
+          patientsSelect={patients}
+          patientsLoading={loadingPatients}
+          patientsSearch={searchPatients}
+          onSearchChange={(val) => {
+            setSearchPatients(val);
+          }}
+        />
+      </UploadFormProvider>
     </>
   );
 };
