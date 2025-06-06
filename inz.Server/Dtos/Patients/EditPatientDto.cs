@@ -2,7 +2,7 @@ using inz.Server.Models;
 
 namespace inz.Server.Dtos.Patients;
 
-public record PatientDetailDto(
+public record EditPatientDto(
     int Id,
     string Name,
     string Surname,
@@ -14,14 +14,12 @@ public record PatientDetailDto(
     string Province,
     string City,
     string? Email,
-    string? Phone,
-    List<PatientContactDto>? Contacts,
-    List<string>? Docs
+    string? Phone
 )
 {
-    public PatientDetailDto(Patient p, List<PatientContactDto> contacts, List<string> docs) : this(
+    public EditPatientDto(Patient p) : this(
         p.Id, p.Name, p.Surname, p.Dob, p.Street, p.House, p.Apartment, p.ZipCode,
-        p.Province, p.City, p.Email, p.Phone, contacts.Count > 0 ? contacts : null, docs.Count > 0 ? docs : null)
+        p.Province, p.City, p.Email, p.Phone)
     {
     }
 }

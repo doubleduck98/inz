@@ -11,6 +11,8 @@ public interface IPatientsService
     public Task<List<PatientDto>> SearchPatients(string userId, string search);
     public Task<Result<PatientDto>> CreatePatient(string userId, CreatePatientReq req);
     public Task<Result<PatientDetailDto>> GetPatientDetails(string userId, int id);
+    public Task<Result<EditPatientDto>> EditPatient(string userId, int id, EditPatientReq req);
+    public Task<Result<PatientContactDto>> AddContact(string userId, int id, AddContactReq req);
 }
 
 public class PatientsService : IPatientsService
@@ -79,11 +81,61 @@ public class PatientsService : IPatientsService
 
     public async Task<Result<PatientDetailDto>> GetPatientDetails(string userId, int id)
     {
-        var p = await _db.Patients.Include(p => p.Contacts)
+        var p = await _db.Patients
+            .Include(p => p.Contacts)
+            .Include(p => p.Documents)
             .SingleOrDefaultAsync(p => p.CoordinatingUserId == userId && p.Id == id);
         if (p == null) return Result.Failure<PatientDetailDto>(Error.PatientNotFound);
-        
+
         var contacts = p.Contacts.Select(c => new PatientContactDto(c.Name, c.Email, c.Phone)).ToList();
-        return new PatientDetailDto(p, contacts);
+        var docs = p.Documents.Select(d => d.FileName).ToList();
+        return new PatientDetailDto(p, contacts, docs);
+    }
+
+    public async Task<Result<EditPatientDto>> EditPatient(string userId, int id, EditPatientReq req)
+    {
+        var exists = await _db.Patients.AnyAsync(p =>
+            p.CoordinatingUserId == userId && p.Name == req.Name && p.Surname == req.Surname && p.Dob == req.Dob &&
+            p.Id != id);
+        if (exists) return Result.Failure<EditPatientDto>(Error.PatientAlreadyExists);
+
+        var patient = await _db.Patients.SingleAsync(p => p.Id == id && p.CoordinatingUserId == userId);
+        UpdatePatient(patient, req);
+        _db.Patients.Update(patient);
+        await _db.SaveChangesAsync();
+
+        return new EditPatientDto(patient);
+    }
+
+    public async Task<Result<PatientContactDto>> AddContact(string userId, int id, AddContactReq req)
+    {
+        var patient = await _db.Patients.Include(p => p.Contacts)
+            .SingleAsync(p => p.Id == id && p.CoordinatingUserId == userId);
+        var contact = new PatientContact
+        {
+            Patient = patient,
+            Name = req.Name,
+            Email = req.Email,
+            Phone = req.Phone
+        };
+        patient.Contacts.Add(contact);
+        _db.Patients.Update(patient);
+        await _db.SaveChangesAsync();
+        return new PatientContactDto(contact.Name, contact.Email, contact.Phone);
+    }
+
+    private static void UpdatePatient(Patient p, EditPatientReq req)
+    {
+        p.Name = req.Name;
+        p.Surname = req.Surname;
+        p.Dob = req.Dob;
+        p.Street = req.Street;
+        p.House = req.House;
+        p.Apartment = req.Apartment;
+        p.ZipCode = req.ZipCode;
+        p.Province = req.Province;
+        p.City = req.City;
+        p.Email = req.Email;
+        p.Phone = req.Phone;
     }
 }

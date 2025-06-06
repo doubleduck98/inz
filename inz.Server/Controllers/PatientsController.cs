@@ -53,4 +53,18 @@ public class PatientsController : ControllerBase
         var res = await _patients.CreatePatient(UserId, req);
         return res.IsSuccess ? Created("", res.Value) : ProblemResponse(res);
     }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Edit([FromBody] EditPatientReq req, int id)
+    {
+        var res = await _patients.EditPatient(UserId, id, req);
+        return res.IsSuccess ? Ok(res.Value) : ProblemResponse(res);
+    }
+
+    [HttpPost("{id:int}")]
+    public async Task<IActionResult> AddContact(int id, [FromBody] AddContactReq req)
+    {
+        var res = await _patients.AddContact(UserId, id, req);
+        return res.IsSuccess ? Ok(res.Value) : ProblemResponse(res);
+    }
 }
