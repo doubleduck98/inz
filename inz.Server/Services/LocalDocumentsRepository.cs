@@ -5,6 +5,7 @@ public interface IDocumentsRepository
     public Task<bool> DocumentExists(string userId, string path);
     public Task<Stream> GetDocument(string userId, string path);
     public Task<string> SaveDocument(string userId, IFormFile file, string fileName);
+    public Task<string> RenameDocument(string userId, string path, string newName);
     public Task<string> SoftDeleteDocument(string userId, string path);
     public Task<string> RestoreDocument(string userId, string path);
 }
@@ -47,6 +48,14 @@ public class LocalDocumentsRepository : IDocumentsRepository
 
         // return name for database storage
         return fileName;
+    }
+
+    public Task<string> RenameDocument(string userId, string path, string newName)
+    {
+        var oldPath = Path.Combine(_dir, userId, path);
+        var newPath = Path.Combine(_dir, userId, newName);
+        File.Move(oldPath, newPath);
+        return Task.FromResult(newName);
     }
 
     public Task<string> SoftDeleteDocument(string userId, string path)

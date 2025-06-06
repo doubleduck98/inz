@@ -11,8 +11,8 @@ public interface IDocumentsService
     public Task<Result<DocumentStreamDto>> GetFileStream(string userId, int fileId);
     public Task<Result<DocumentStreamDto>> GetFileArchive(string userId, int[] fileIds);
     public Task<List<DocumentDto>> GetFiles(string userId);
-    public Task<Result<DocumentDto>> SaveDocument(string userId, IFormFile file, string fileName);
-    public Task<Result> EditDocument(string userId, int id, string newName);
+    public Task<Result<DocumentDto>> SaveDocument(string userId, CreateFileReq req);
+    public Task<Result<DocumentDto>> EditDocument(string userId, int id, EditFileReq req);
     public Task<Result> DeleteDocument(string userId, int id);
     public Task<Result> DeleteDocuments(string userId, int[] fileIds);
     public Task<Result> RestoreDocument(string userId, int id);
@@ -62,13 +62,16 @@ public class DocumentsService : IDocumentsService
 
     public async Task<List<DocumentDto>> GetFiles(string userId)
     {
-        return await _db.Documents.Where(d => d.OwnerId == userId)
-            .Select(doc => DocumentDto.Create(doc.Id, doc.FileName, doc.FileType))
+        return await _db.Documents.Include(d => d.Patient)
+            .Where(d => d.OwnerId == userId)
+            .Select(doc => new DocumentDto(doc.Id, doc.FileName,
+                doc.Patient != null ? $"{doc.Patient.Name} {doc.Patient.Surname}" : null))
             .ToListAsync();
     }
 
-    public async Task<Result<DocumentDto>> SaveDocument(string userId, IFormFile file, string fileName)
+    public async Task<Result<DocumentDto>> SaveDocument(string userId, CreateFileReq req)
     {
+        var (file, fileName, patientId) = req;
         var ex = Path.GetExtension(file.FileName);
         var fileType = FileExtensionToType(ex);
         if (fileType == null) return Result.Failure<DocumentDto>(Error.FileIllegalExtension);
@@ -76,6 +79,11 @@ public class DocumentsService : IDocumentsService
 
         var alreadyExists = _db.Documents.Any(d => d.FileName == fileName && d.OwnerId == userId);
         if (alreadyExists) return Result.Failure<DocumentDto>(Error.FileAlreadyExists);
+
+        var userWithPatient = await _db.Users
+            .Join(_db.Patients, u => u.Id, p => p.CoordinatingUserId, (user, patient) => new { user, patient })
+            .SingleOrDefaultAsync(up => up.user.Id == userId && up.patient.Id == patientId);
+        if (userWithPatient == null) return Result.Failure<DocumentDto>(Error.PatientNotFound);
 
         string path;
         try
@@ -93,10 +101,10 @@ public class DocumentsService : IDocumentsService
             return Result.Failure<DocumentDto>(new Error("File.ERROR", e.ToString(), 500));
         }
 
-        var user = await _db.Users.SingleAsync(u => u.Id == userId);
         var doc = new Document
         {
-            User = user,
+            User = userWithPatient.user,
+            Patient = userWithPatient.patient,
             FileName = fileName,
             FileType = (FileType)fileType,
             SourcePath = path,
@@ -106,19 +114,50 @@ public class DocumentsService : IDocumentsService
         await _db.Documents.AddAsync(doc);
         await _db.SaveChangesAsync();
 
-        return DocumentDto.Create(doc.Id, fileName, doc.FileType);
+        var pName = $"{userWithPatient.patient.Name} {userWithPatient.patient.Surname}";
+        return new DocumentDto(doc.Id, fileName, pName);
     }
 
-    public async Task<Result> EditDocument(string userId, int id, string newName)
+    public async Task<Result<DocumentDto>> EditDocument(string userId, int id, EditFileReq req)
     {
-        var doc = await _db.Documents.SingleOrDefaultAsync(d => d.Id == id && d.OwnerId == userId);
-        if (doc == null) return Result.Failure(Error.FileNotFound);
+        var doc = await _db.Documents.Include(d => d.Patient)
+            .SingleOrDefaultAsync(d => d.Id == id && d.OwnerId == userId);
+        if (doc == null) return Result.Failure<DocumentDto>(Error.FileNotFound);
 
-        doc.FileName = newName;
+        var ex = Path.GetExtension(doc.FileName);
+        var newFileName = req.FileName;
+        if (!req.FileName.EndsWith(ex)) newFileName += ex;
+
+        if (doc.FileName != newFileName)
+        {
+            var alreadyExists = _db.Documents.Any(d => d.FileName == newFileName && d.OwnerId == userId);
+            if (alreadyExists) return Result.Failure<DocumentDto>(Error.FileAlreadyExists);
+
+            try
+            {
+                var newPath = await _documents.RenameDocument(userId, doc.SourcePath, newFileName);
+                doc.SourcePath = newPath;
+            }
+            catch (IOException e)
+            {
+                Console.WriteLine(e.ToString());
+                return Result.Failure<DocumentDto>(Error.FileAlreadyExists);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return Result.Failure<DocumentDto>(new Error("File.ERROR", e.ToString(), 500));
+            }
+        }
+        
+        doc.FileName = newFileName;
+        doc.PatientId = req.PatientId;
         doc.LastEditUtc = DateTime.UtcNow;
         _db.Documents.Update(doc);
         await _db.SaveChangesAsync();
-        return Result.Success();
+        
+        var patientName = $"{doc.Patient?.Name} {doc.Patient?.Surname}";
+        return new DocumentDto(doc.Id, doc.FileName, patientName);
     }
 
     public async Task<Result> DeleteDocument(string userId, int id)

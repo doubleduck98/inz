@@ -59,15 +59,15 @@ public class ResourcesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromForm] CreateFileReq req)
     {
-        var res = await _docs.SaveDocument(UserId, req.File, req.FileName);
+        var res = await _docs.SaveDocument(UserId, req);
         return res.IsSuccess ? Created($"/{res.Value.Id}", res.Value) : ProblemResponse(res);
     }
 
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Edit(int id, [FromBody] EditFileReq req)
     {
-        var res = await _docs.EditDocument(UserId, id, req.FileName);
-        return res.IsSuccess ? Ok() : ProblemResponse(res);
+        var res = await _docs.EditDocument(UserId, id, req);
+        return res.IsSuccess ? Ok(res.Value) : ProblemResponse(res);
     }
 
     [HttpDelete("{id:int}")]
