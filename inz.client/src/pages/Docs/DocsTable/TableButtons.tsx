@@ -1,4 +1,4 @@
-import { Stack, Button, Text } from '@mantine/core';
+import { Button, Text, SimpleGrid } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import {
   IconCloudUpload,
@@ -6,9 +6,11 @@ import {
   IconTrashX,
 } from '@tabler/icons-react';
 import { pliki } from '../utils/TableUtils';
+import { useMediaQuery } from '@mantine/hooks';
 
 interface TableButtonsProps {
   openModal: () => void;
+  openDrawer?: () => void;
   selection: number[];
   onDownloadSelection: () => void;
   onDeleteSelection: () => void;
@@ -17,9 +19,11 @@ interface TableButtonsProps {
 const TableButtons = ({
   selection,
   openModal,
+  openDrawer,
   onDownloadSelection,
   onDeleteSelection,
 }: TableButtonsProps) => {
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const handleDeleteSelection = () => {
     modals.openConfirmModal({
       title: 'Potwierdź usunięcie',
@@ -35,38 +39,38 @@ const TableButtons = ({
   };
 
   return (
-    <Stack gap="xs">
+    <SimpleGrid cols={{ base: 3, sm: 1 }} spacing="xs">
       <Button
-        leftSection={<IconCloudUpload />}
-        rightSection={<span />}
-        variant="default"
-        onClick={openModal}
-        justify="space-between"
-        h={{ base: 60, sm: 36 }}
+        leftSection={isMobile ? undefined : <IconCloudUpload />}
+        rightSection={isMobile ? undefined : <span />}
+        variant="gradient"
+        onClick={isMobile ? openDrawer : openModal}
+        justify={isMobile ? 'center' : 'space-between'}
       >
-        Wyślij
+        Prześlij
       </Button>
       <Button
-        leftSection={<IconCloudDownload />}
-        rightSection={<span />}
+        leftSection={isMobile ? undefined : <IconCloudDownload />}
+        rightSection={isMobile ? undefined : <span />}
         variant="default"
         disabled={selection.length === 0}
-        justify="space-between"
+        justify={isMobile ? 'center' : 'space-between'}
         onClick={onDownloadSelection}
       >
         Pobierz
       </Button>
       <Button
-        leftSection={<IconTrashX />}
-        rightSection={<span />}
-        variant="default"
+        leftSection={isMobile ? undefined : <IconTrashX />}
+        rightSection={isMobile ? undefined : <span />}
+        color="red"
+        variant="light"
         disabled={selection.length === 0}
-        justify="space-between"
+        justify={isMobile ? 'center' : 'space-between'}
         onClick={handleDeleteSelection}
       >
         Usuń
       </Button>
-    </Stack>
+    </SimpleGrid>
   );
 };
 

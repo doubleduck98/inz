@@ -1,6 +1,7 @@
-import { Table, Checkbox } from '@mantine/core';
+import { Table, Checkbox, Text } from '@mantine/core';
 import { Doc } from '../../../types/Doc';
 import TableHeaderButton from './TableHeaderButton';
+import { useMediaQuery } from '@mantine/hooks';
 
 interface TableHeaderProps {
   docs: Doc[];
@@ -19,10 +20,12 @@ const TableHeader = ({
   reverseSortDirection,
   setSorting,
 }: TableHeaderProps) => {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
   return (
     <Table.Thead>
       <Table.Tr>
-        <Table.Th w={40}>
+        <Table.Th w={{ base: '30px', sm: '60px' }} px={{ base: '0', sm: 'sm' }}>
           <Checkbox
             onChange={toggleAll}
             checked={selection.length === docs.length && docs.length > 0}
@@ -31,20 +34,40 @@ const TableHeader = ({
             }
           />
         </Table.Th>
-        <TableHeaderButton
-          sorted={sortBy === 'fileName'}
-          reversed={reverseSortDirection}
-          onSort={() => setSorting('fileName')}
-        >
-          Nazwa
-        </TableHeaderButton>
-        <TableHeaderButton
-          sorted={sortBy === 'fileType'}
-          reversed={reverseSortDirection}
-          onSort={() => setSorting('fileType')}
-        >
-          Typ
-        </TableHeaderButton>
+        {isMobile ? (
+          <TableHeaderButton
+            sorted={sortBy === 'fileName'}
+            reversed={reverseSortDirection}
+            onSort={() => setSorting('fileName')}
+          >
+            Dokument
+          </TableHeaderButton>
+        ) : (
+          <>
+            <TableHeaderButton
+              sorted={sortBy === 'fileName'}
+              reversed={reverseSortDirection}
+              onSort={() => setSorting('fileName')}
+            >
+              Nazwa
+            </TableHeaderButton>
+            <Table.Th w="220px">
+              <TableHeaderButton
+                sorted={sortBy === 'patientName'}
+                reversed={reverseSortDirection}
+                onSort={() => setSorting('patientName')}
+              >
+                Pacjent
+              </TableHeaderButton>
+            </Table.Th>
+          </>
+        )}
+
+        <Table.Th w={{ base: '40px', sm: '120px' }}>
+          <Text fw={500} fz="sm">
+            {isMobile ? '' : 'Akcje'}
+          </Text>
+        </Table.Th>
       </Table.Tr>
     </Table.Thead>
   );

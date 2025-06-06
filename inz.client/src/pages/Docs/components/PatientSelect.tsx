@@ -6,21 +6,23 @@ import {
   useCombobox,
 } from '@mantine/core';
 import { Paitent } from '../../../types/Patient';
-import { useUploadFormContext } from '../UploadFormContext';
 import { useState } from 'react';
 import dayjs from 'dayjs';
+import { UseFormReturnType } from '@mantine/form';
 
 interface PatientSelectProps {
   patients: Paitent[];
   loading: boolean;
-  search: string;
   onSearchChange: (s: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  form: UseFormReturnType<any>;
 }
 
 const PatientSelect = ({
   patients,
   loading,
   onSearchChange,
+  form,
 }: PatientSelectProps) => {
   const options = patients.map((p) => (
     <Combobox.Option key={p.id} value={`${p.id}`}>
@@ -37,7 +39,6 @@ const PatientSelect = ({
     onDropdownOpen: () => {},
   });
 
-  const form = useUploadFormContext();
   const [val, setValue] = useState('');
 
   const rightSection = () => {
@@ -67,14 +68,16 @@ const PatientSelect = ({
       <Combobox.Target>
         <InputBase
           label="Pacjent:"
-          placeholder="Wyszukaj i wybierz pacjenta"
+          placeholder="Proszę wybrać pacjenta"
+          value={val}
+          pointer
           rightSection={rightSection()}
           onClick={() => combobox.toggleDropdown()}
-          rightSectionPointerEvents={val === null ? 'none' : 'all'}
-          value={val}
+          rightSectionPointerEvents={val ? 'all' : 'none'}
           onChange={(event) => {
             onSearchChange(event.currentTarget.value);
             setValue(event.currentTarget.value);
+            combobox.openDropdown();
           }}
           error={form.getInputProps('patientId').error}
         />

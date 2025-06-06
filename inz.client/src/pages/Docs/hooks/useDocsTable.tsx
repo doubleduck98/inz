@@ -73,6 +73,7 @@ const useDocsTable = ({
     selection,
     toggleRow,
     toggleAll,
+    clearSelection,
   };
 };
 

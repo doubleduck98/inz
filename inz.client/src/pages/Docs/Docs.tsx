@@ -1,75 +1,40 @@
-import { useEffect, useState } from 'react';
-import { Doc } from '../../types/Doc';
+import { useDisclosure } from '@mantine/hooks';
+import UploadForm from './UploadForm/UploadForm';
 import {
-  Box,
-  Button,
-  CloseButton,
-  Collapse,
-  Container,
-  Grid,
-  TextInput,
-} from '@mantine/core';
-import axiosInstance from '../../Axios';
-import {
-  IconChevronDown,
-  IconChevronUp,
-  IconSearch,
-} from '@tabler/icons-react';
-import DocsTable from './DocsTable/DocsTable';
-import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
-import UploadModal from './UploadModal/UploadModal';
-import TableButtons from './DocsTable/TableButtons';
-import useDocsTable from './DocsTable/useDocsTable';
-import { UploadFormProvider, useUploadForm } from './UploadFormContext';
-import { Paitent } from '../../types/Patient';
+  UploadFormProvider,
+  useUploadForm,
+} from './UploadForm/UploadFormContext';
+import { EditFormProvider, useEditForm } from './EditForm/EditFormContext';
+import EditForm from './EditForm/EditForm';
+import ResponsiveDialog from '../../ResponsiveDialog';
+import useDocuments from './hooks/useDocuments';
+import usePatients from './hooks/usePatients';
+import DocsTableContainer from './DocsTable/DocsTableContainer';
+import { stripExtension } from './utils/DocsUtils';
+import { AxiosError } from 'axios';
+import { ApiError } from '../../types/ApiError';
 
 const Docs = () => {
-  const [docs, setDocs] = useState<Doc[]>([]);
   const {
-    sortedData,
-    search,
-    handleSearchChange,
-    handleSearchClear,
-    sortBy,
-    setSorting,
-    reverseSortDirection,
-    selection,
-    toggleRow,
-    toggleAll,
-  } = useDocsTable({ docs: docs });
+    docs,
+    uploadDocument,
+    downloadDocuments,
+    editDocument,
+    deleteDocument,
+    deleteSelectedDocuments,
+  } = useDocuments();
 
-  const [collapsed, { toggle: toggleCollapse }] = useDisclosure(false);
-  const [modalOpened, { open: openModal, close: closeModal }] =
+  const { patients, setSearchPatients, loadingPatients } = usePatients();
+
+  const [
+    uploadDialogOpened,
+    { open: openUploadDialog, close: closeUploadDialog },
+  ] = useDisclosure(false);
+  const [editDialogOpened, { open: openEditDialog, close: closeEditDialog }] =
     useDisclosure(false);
 
-  const [patients, setPatients] = useState<Paitent[]>([]);
-  const [searchPatients, setSearchPatients] = useState('');
-  const [searchDebounced] = useDebouncedValue(searchPatients, 500, {
-    leading: true,
-  });
-  const [loadingPatients, setLoadingPatients] = useState(false);
-
-  const getDocuments = async () => {
-    const opts = {
-      url: 'Resources/Get',
-      method: 'GET',
-      headers: { 'content-type': 'application/json' },
-      withCredentials: true,
-    };
-
-    try {
-      const { data } = await axiosInstance.request(opts);
-      setDocs(data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  useEffect(() => {
-    getDocuments();
-  }, []);
-
   const form = useUploadForm({
+    mode: 'uncontrolled',
     initialValues: {
       patientId: '',
       file: null,
@@ -87,212 +52,139 @@ const Docs = () => {
     },
   });
 
+  const editForm = useEditForm({
+    initialValues: {
+      fileId: 0,
+      fileName: '',
+      patientId: '',
+      patientName: '',
+    },
+
+    validate: {
+      patientId: (val) => (val ? null : 'Proszę wybrać pacjenta'),
+      fileName: (val) => {
+        if (!val.length) return 'Proszę podać nazwę';
+        if (val.length > 200) return 'Nazwa jest za długa (maks. 200 znaków)';
+        return null;
+      },
+    },
+  });
+
   const onFileChange = (file: File | null) => {
     if (file) form.setValues({ fileName: file.name, file: file });
     else form.setValues({ file: file });
   };
-
-  useEffect(() => {
-    const handleSearch = async () => {
-      const opts = {
-        url: 'Patients/Get',
-        method: 'GET',
-        withCredentials: true,
-        params: {
-          search: searchDebounced,
-        },
-      };
-
-      try {
-        setLoadingPatients(true);
-        const { data } = await axiosInstance.request(opts);
-        setPatients(data);
-      } catch (e) {
-        console.log(e);
-      } finally {
-        setLoadingPatients(false);
-      }
-    };
-
-    handleSearch();
-  }, [searchDebounced]);
 
   const handleUpload = async () => {
     const formData = new FormData();
     const file: unknown = form.values.file;
     formData.append('file', file as File);
     formData.append('fileName', form.values.fileName);
-    const opts = {
-      url: 'Resources/Create',
-      method: 'POST',
-      headers: { 'content-type': 'multipart/form-data' },
-      data: formData,
-      withCredentials: true,
-    };
+    formData.append('patientId', form.values.patientId);
 
     try {
-      const { data } = await axiosInstance.request(opts);
-      console.log(data);
-      setDocs([data, ...docs]);
+      await uploadDocument(formData);
       form.reset();
-      closeModal();
+      closeUploadDialog();
     } catch (e) {
-      console.log(e);
-      form.setErrors({
-        file: ' ',
-        fileName: 'Plik o takiej nazwie już istnieje',
-      });
+      if (e instanceof AxiosError && e.response?.data) {
+        const error = e.response.data as ApiError;
+        if (error.status === 409) {
+          form.setErrors({
+            file: ' ',
+            fileName: 'Plik o takiej nazwie już istnieje',
+          });
+        }
+      }
     }
   };
 
-  const handleDownloadSelection = async () => {
-    console.log(selection);
-    const opts = {
-      url: 'Resources/Download',
-      method: 'GET',
-      headers: { 'content-type': 'application/json' },
-      params: { ids: selection },
-      paramsSerializer: { indexes: null },
-    };
+  const handleEditClick = (id: number) => {
+    const doc = docs.find((d) => d.id === id);
+    editForm.setValues({
+      fileId: doc?.id,
+      fileName: stripExtension(doc?.fileName),
+      patientId: '',
+      patientName: doc?.patientName,
+    });
+    openEditDialog();
+  };
 
+  const handleEditSubmit = async () => {
+    const { fileId, fileName, patientId } = editForm.getValues();
     try {
-      const { data, headers } = await axiosInstance.request<Blob>({
-        ...opts,
-        responseType: 'blob',
-      });
-
-      const href = URL.createObjectURL(data);
-      const link = document.createElement('a');
-      const content = headers['content-disposition'];
-
-      link.href = href;
-      link.download = content.match(/filename="(.+)"/)[1];
-      document.body.appendChild(link);
-      link.click();
-
-      document.body.removeChild(link);
-      URL.revokeObjectURL(href);
+      await editDocument(fileId, { fileName, patientId });
+      editForm.reset();
+      closeEditDialog();
     } catch (e) {
-      console.log(e);
+      if (e instanceof AxiosError && e.response?.data) {
+        const error = e.response.data as ApiError;
+        if (error.status === 409) {
+          editForm.setErrors({ fileName: 'Plik o takiej nazwie już istnieje' });
+        }
+      }
     }
+  };
+
+  const handleDownloadSelection = async (ids: number[]) => {
+    await downloadDocuments(ids);
   };
 
   const handleDelete = async (id: number) => {
-    const opts = {
-      url: `Resources/Delete/${id}`,
-      method: 'DELETE',
-      withCredentials: true,
-    };
-
-    try {
-      await axiosInstance.request(opts);
-      setDocs(docs.filter((d) => d.id !== id));
-    } catch (e) {
-      console.log(e);
-    }
+    await deleteDocument(id);
   };
 
-  const handleDeleteSelection = async () => {
-    const opts = {
-      url: `Resources/Delete/`,
-      method: 'DELETE',
-      withCredentials: true,
-      data: {
-        ids: selection,
-      },
-    };
-
-    try {
-      await axiosInstance.request(opts);
-      setDocs(docs.filter((d) => !selection.includes(d.id)));
-    } catch (e) {
-      console.log(e);
-    }
+  const handleDeleteSelection = async (ids: number[]) => {
+    await deleteSelectedDocuments(ids);
   };
-
-  const tableButtons = (
-    <TableButtons
-      selection={selection}
-      openModal={openModal}
-      onDownloadSelection={handleDownloadSelection}
-      onDeleteSelection={handleDeleteSelection}
-    />
-  );
 
   return (
     <>
-      <Container fluid>
-        <Box hiddenFrom="sm" my={12}>
-          <Button
-            variant="default"
-            onClick={toggleCollapse}
-            fullWidth
-            rightSection={
-              collapsed ? (
-                <IconChevronUp size={18} />
-              ) : (
-                <IconChevronDown size={18} />
-              )
-            }
-          />
-          <Collapse in={collapsed}>
-            <Box pt={12}>{tableButtons}</Box>
-          </Collapse>
-        </Box>
+      <DocsTableContainer
+        docs={docs}
+        onDelete={handleDelete}
+        onEdit={handleEditClick}
+        openUploadDialog={openUploadDialog}
+        onDownloadSelection={handleDownloadSelection}
+        onDeleteSelection={handleDeleteSelection}
+      />
 
-        <Grid overflow="hidden">
-          <Grid.Col span="auto" order={{ base: 2, sm: 1 }}>
-            <TextInput
-              placeholder="Wyszukaj po dowolnym polu"
-              mb="md"
-              leftSection={<IconSearch size={16} stroke={1.5} />}
-              value={search}
-              onChange={handleSearchChange}
-              rightSection={
-                <CloseButton
-                  aria-label="Clear input"
-                  onClick={handleSearchClear}
-                  style={{ display: search ? undefined : 'none' }}
-                />
-              }
+      <ResponsiveDialog
+        opened={uploadDialogOpened}
+        onClose={closeUploadDialog}
+        title="Prześlij dokument"
+      >
+        <UploadFormProvider form={form}>
+          <form onSubmit={form.onSubmit(handleUpload)}>
+            <UploadForm
+              onFileChange={onFileChange}
+              patientsSelect={patients}
+              patientsLoading={loadingPatients}
+              onSearchChange={(val) => {
+                setSearchPatients(val);
+              }}
             />
-            <DocsTable
-              docs={docs}
-              sortedData={sortedData}
-              selection={selection}
-              toggleRow={toggleRow}
-              toggleAll={toggleAll}
-              sortBy={sortBy}
-              reverseSortDirection={reverseSortDirection}
-              setSorting={setSorting}
-              onDelete={handleDelete}
-            />
-          </Grid.Col>
-          <Grid.Col
-            span={{ base: 12, sm: 'content' }}
-            miw={150}
-            order={{ base: 1, sm: 2 }}
-            visibleFrom="sm"
-          >
-            {tableButtons}
-          </Grid.Col>
-        </Grid>
-      </Container>
+          </form>
+        </UploadFormProvider>
+      </ResponsiveDialog>
 
-      <UploadFormProvider form={form}>
-        <UploadModal
-          opened={modalOpened}
-          onClose={closeModal}
-          onSubmit={form.onSubmit(handleUpload)}
-          onFileChange={onFileChange}
-          patientsSelect={patients}
-          patientsLoading={loadingPatients}
-          patientsSearch={searchPatients}
-          onSearchChange={(val) => {
-            setSearchPatients(val);
-          }}
-        />
-      </UploadFormProvider>
+      <ResponsiveDialog
+        opened={editDialogOpened}
+        onClose={closeEditDialog}
+        title="Edytuj dokument"
+      >
+        <EditFormProvider form={editForm}>
+          <form onSubmit={editForm.onSubmit(handleEditSubmit)}>
+            <EditForm
+              patientsSelect={patients}
+              patientsLoading={loadingPatients}
+              onSearchChange={(val) => {
+                setSearchPatients(val);
+              }}
+            />
+          </form>
+        </EditFormProvider>
+      </ResponsiveDialog>
     </>
   );
 };

@@ -13,6 +13,7 @@ interface DocsTableProps {
   reverseSortDirection: boolean;
   setSorting: (field: keyof Doc) => void;
   onDelete: (id: number) => void;
+  onEdit: (id: number, mobile: boolean) => void;
 }
 
 const DocsTable = ({
@@ -25,6 +26,7 @@ const DocsTable = ({
   reverseSortDirection,
   setSorting,
   onDelete,
+  onEdit,
 }: DocsTableProps) => {
   const sortedDocs = sortedData.map((doc) => (
     <TableRow
@@ -33,12 +35,13 @@ const DocsTable = ({
       selected={selection.includes(doc.id)}
       onToggle={() => toggleRow(doc.id)}
       onDelete={onDelete}
+      onEdit={onEdit}
     />
   ));
 
   return (
     <ScrollArea>
-      <Table verticalSpacing="sm">
+      <Table verticalSpacing="sm" miw={{ base: 280, sm: 700 }} layout="fixed">
         <TableHeader
           docs={docs}
           selection={selection}
@@ -52,7 +55,7 @@ const DocsTable = ({
             sortedDocs
           ) : (
             <Table.Tr>
-              <Table.Td colSpan={4} style={{ textAlign: 'center' }}>
+              <Table.Td colSpan={3} style={{ textAlign: 'center' }}>
                 Nie znaleziono dokumentów.
               </Table.Td>
             </Table.Tr>
