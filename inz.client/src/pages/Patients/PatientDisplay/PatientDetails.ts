@@ -15,4 +15,5 @@ export interface PatientDetails {
     email: string | null;
     phone: string | null;
   }[];
+  docs: string[] | null;
 }

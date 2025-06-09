@@ -1,12 +1,12 @@
 import { Box, Divider, Text, Group } from '@mantine/core';
-import { PatientFormValues } from './patientFormContext';
+import { AddFormValues } from './AddFormContext';
 import dayjs from 'dayjs';
 
-interface SummaryScreenProps {
-  data: PatientFormValues;
+interface AddFormSummaryProps {
+  data: AddFormValues;
 }
 
-const SummaryScreen = ({ data }: SummaryScreenProps) => {
+const AddFormSummary = ({ data }: AddFormSummaryProps) => {
   return (
     <Box miw={'100%'} m={0} p="xs">
       <Text size="xl" fw={700} mb="sm" ta="center">
@@ -137,4 +137,4 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
   );
 };
 
-export default SummaryScreen;
+export default AddFormSummary;

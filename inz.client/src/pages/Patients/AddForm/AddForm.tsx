@@ -12,14 +12,14 @@ import {
   Flex,
   Switch,
 } from '@mantine/core';
-import classes from './Patients.module.css';
+import classes from '../Patients.module.css';
 import { IconArrowLeft, IconUserPlus } from '@tabler/icons-react';
 import { DatePickerInput } from '@mantine/dates';
 import React from 'react';
 import dayjs from 'dayjs';
-import { usePatientFormContext } from './patientFormContext';
+import { useAddFormContext } from './AddFormContext';
 import { randomId } from '@mantine/hooks';
-import SummaryScreen from './SummaryScreen';
+import AddFormSummary from './AddFormSummary';
 
 interface AddFormProps {
   active: number;
@@ -27,15 +27,12 @@ interface AddFormProps {
 }
 
 const AddForm = ({ active, setActive }: AddFormProps) => {
-  const form = usePatientFormContext();
+  const form = useAddFormContext();
   const hasContacts = form.getValues().hasContacts;
   const toggleHasContacts = () =>
     form.setFieldValue('hasContacts', !hasContacts);
   const trySetActive = (i: number) => {
     if (i < active) setActive(i);
-    else if (!form.validate().hasErrors) {
-      setActive(i);
-    }
   };
   const nextStep = () =>
     setActive((current) => {
@@ -249,7 +246,7 @@ const AddForm = ({ active, setActive }: AddFormProps) => {
         </Stepper.Step>
 
         <Stepper.Completed>
-          <SummaryScreen data={form.getValues()} />
+          <AddFormSummary data={form.getValues()} />
         </Stepper.Completed>
       </Stepper>
       <Group justify="center" mt="xl" grow preventGrowOverflow={false}>

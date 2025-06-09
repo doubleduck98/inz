@@ -1,72 +1,62 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Paitent } from '../../types/Patient';
-import axiosInstance from '../../Axios';
-import AddForm from './AddForm';
+import AddForm from './AddForm/AddForm';
 import {
-  PatientFormProvider,
-  usePatientForm,
+  AddFormProvider,
+  useAddForm,
   ValidatePatientForm,
-} from './patientFormContext';
+} from './AddForm/AddFormContext';
 import classes from './Patients.module.css';
 import { randomId, useDisclosure } from '@mantine/hooks';
 import dayjs from 'dayjs';
 import { Box, Drawer, Grid, Modal } from '@mantine/core';
-import { PatientDetails } from './PatientDetails';
-import PatientList from './PatientList';
-import PatientDetailsDisplay from './PatientDetailsDisplay';
+import PatientList from './PatientDisplay/PatientList';
+import PatientDetailsDisplay from './PatientDisplay/PatientDetailsDisplay';
+import ResponsiveDialog from '../../ResponsiveDialog';
+import EditForm from './EditForm/EditForm';
+import {
+  EditFormProvider,
+  EditFormValues,
+  useEditForm,
+  ValidateEditForm,
+} from './EditForm/EditFormContext';
+import { AxiosError } from 'axios';
+import { ApiError } from '../../types/ApiError';
+import {
+  AddContactFormProvider,
+  useAddContactForm,
+  ValidateAddConForm,
+} from './AddContactForm/AddContactFormContext';
+import AddContactForm from './AddContactForm/AddContactForm';
+import { usePatients } from './usePatients';
 
 const Patients = () => {
-  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(
-    null
-  );
-  const [searchTerm, setSearchTerm] = useState('');
-  const [patients, setPatients] = useState<Paitent[]>([]);
-  const [patientDetails, setPatientDetails] = useState<PatientDetails | null>(
-    null
-  );
-  const [patientLoading, setPatientLoading] = useState(false);
   const [modalOpened, { open: openModal, close: closeModal }] =
     useDisclosure(false);
   const [drawerOpened, { open: openDrawer, close: closeDrawer }] =
     useDisclosure(false);
+  const [editDialogOpened, { open: openEditDialog, close: closeEditDialog }] =
+    useDisclosure(false);
+  const [
+    addConDialogOpened,
+    { open: openAddConDialog, close: closeAddConDialog },
+  ] = useDisclosure(false);
 
-  const getPatients = async () => {
-    const opts = {
-      url: 'Patients/Get',
-      withCredentials: true,
-    };
-
-    try {
-      const { data } = await axiosInstance.request(opts);
-      setPatients(data);
-    } catch (e) {
-      console.log(e);
-    }
-  };
-
-  const getPatientDetails = async (id: number) => {
-    const opts = {
-      url: `Patients/Get/${id}`,
-      withCredentials: true,
-    };
-
-    try {
-      setPatientLoading(true);
-      const { data } = await axiosInstance.request(opts);
-      setPatientDetails(data);
-    } catch (e) {
-      console.log(e);
-    } finally {
-      setPatientLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    getPatients();
-  }, []);
+  const {
+    selectedPatientId,
+    setSelectedPatientId,
+    searchTerm,
+    setSearchTerm,
+    filteredPatients,
+    patientDetails,
+    patientLoading,
+    addPatient,
+    editPatient,
+    addContactToPatient,
+  } = usePatients();
 
   const [active, setActive] = useState(0);
-  const form = usePatientForm({
+  const addForm = useAddForm({
     mode: 'uncontrolled',
     initialValues: {
       name: 'Szymon',
@@ -89,51 +79,133 @@ const Patients = () => {
     validate: (values) => ValidatePatientForm(active, values),
   });
 
-  const handleSubmit = async () => {
-    const formData = form.getValues();
+  const handleAdd = async () => {
+    const formData = addForm.getValues();
     if (!formData.hasContacts) formData.contacts = [];
-    console.log(formData);
-    const opts = {
-      url: 'Patients/Create',
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      withCredentials: true,
-      data: formData,
-    };
 
     try {
-      const { data } = await axiosInstance.request(opts);
-      setPatients([data, ...patients]);
+      await addPatient(formData);
       closeDrawer();
-      form.reset();
+      addForm.reset();
       setActive(0);
-      console.log(data);
     } catch (e) {
-      console.error(e);
+      if (e instanceof AxiosError && e.response?.data) {
+        const error = e.response.data as ApiError;
+        if (error.status === 409) {
+          setActive(0);
+          addForm.setErrors({
+            name: 'Inna osoba o takich danych jest już zarejestrowana',
+            surname: ' ',
+            dob: ' ',
+          });
+        }
+      }
     }
   };
 
-  const formBody = (
-    <PatientFormProvider form={form}>
-      <form onSubmit={form.onSubmit(handleSubmit)}>
-        <AddForm active={active} setActive={setActive} />
-      </form>
-    </PatientFormProvider>
-  );
+  const editForm = useEditForm({
+    mode: 'uncontrolled',
+    initialValues: {
+      id: 0,
+      name: '',
+      surname: '',
+      dob: null,
+      street: '',
+      house: '',
+      apartment: null,
+      city: '',
+      zipCode: '',
+      province: '',
+      email: null,
+      phone: null,
+    },
 
-  const filteredPatients = patients.filter(
-    (patient) =>
-      patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.surname.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    validate: (values) => ValidateEditForm(values),
+  });
+
+  const handleEdit = async () => {
+    const data = editForm.getValues();
+
+    try {
+      await editPatient(data);
+      editForm.reset();
+      closeEditDialog();
+    } catch (e) {
+      if (e instanceof AxiosError && e.response?.data) {
+        const error = e.response.data as ApiError;
+        if (error.status === 409) {
+          editForm.setErrors({
+            name: 'Inna osoba o takich danych jest już zarejestrowana',
+            surname: ' ',
+            dob: ' ',
+          });
+        }
+      }
+    }
+  };
+
+  const addConForm = useAddContactForm({
+    mode: 'uncontrolled',
+    initialValues: {
+      id: 0,
+      name: '',
+      email: null,
+      phone: null,
+    },
+
+    validate: (values) => ValidateAddConForm(values),
+  });
+
+  const handleAddCon = async () => {
+    const form = addConForm.getValues();
+
+    try {
+      await addContactToPatient(form);
+      addConForm.reset();
+      closeAddConDialog();
+    } catch (e) {
+      console.log(e);
+    }
+  };
 
   const handlePatientClick = (patient: Paitent) => {
     setSelectedPatientId(patient.id);
   };
 
-  useEffect(() => {
-    if (selectedPatientId) getPatientDetails(selectedPatientId);
-  }, [selectedPatientId]);
+  const handleEditClick = () => {
+    if (!patientDetails) return;
+    const newValues: EditFormValues = {
+      id: selectedPatientId!,
+      name: patientDetails.name,
+      surname: patientDetails.surname,
+      dob: patientDetails.dob,
+      street: patientDetails.street,
+      house: patientDetails.house,
+      apartment: patientDetails.apartment,
+      city: patientDetails.city,
+      zipCode: patientDetails.zipCode,
+      province: patientDetails.province,
+      email: patientDetails.email,
+      phone: patientDetails.phone,
+    };
+    editForm.setInitialValues(newValues);
+    editForm.setValues(newValues);
+    editForm.resetDirty();
+    openEditDialog();
+  };
+
+  const handleAddConClick = () => {
+    addConForm.setValues({ id: selectedPatientId! });
+    openAddConDialog();
+  };
+
+  const addFormBody = (
+    <AddFormProvider form={addForm}>
+      <form onSubmit={addForm.onSubmit(handleAdd)}>
+        <AddForm active={active} setActive={setActive} />
+      </form>
+    </AddFormProvider>
+  );
 
   return (
     <>
@@ -142,7 +214,7 @@ const Patients = () => {
         onClose={closeModal}
         title="Dodaj nowego pacjenta"
       >
-        {formBody}
+        {addFormBody}
       </Modal>
       <Drawer
         opened={drawerOpened}
@@ -154,7 +226,7 @@ const Patients = () => {
         position="right"
         classNames={{ header: classes.drawerHeader }}
       >
-        {formBody}
+        {addFormBody}
       </Drawer>
 
       <Box hiddenFrom="sm">
@@ -163,6 +235,8 @@ const Patients = () => {
             onBack={() => {
               setSelectedPatientId(null);
             }}
+            onEdit={handleEditClick}
+            onAddContact={handleAddConClick}
             patient={patientDetails}
             loading={patientLoading}
           />
@@ -185,6 +259,8 @@ const Patients = () => {
               onBack={() => {
                 setSelectedPatientId(null);
               }}
+              onEdit={handleEditClick}
+              onAddContact={handleAddConClick}
               patient={patientDetails}
               loading={patientLoading}
             />
@@ -203,6 +279,30 @@ const Patients = () => {
           />
         </Grid.Col>
       </Grid>
+
+      <ResponsiveDialog
+        title={'Edytuj'}
+        opened={editDialogOpened}
+        onClose={closeEditDialog}
+      >
+        <EditFormProvider form={editForm}>
+          <form onSubmit={editForm.onSubmit(handleEdit)}>
+            <EditForm />
+          </form>
+        </EditFormProvider>
+      </ResponsiveDialog>
+
+      <ResponsiveDialog
+        title={'Dodaj kontakt'}
+        opened={addConDialogOpened}
+        onClose={closeAddConDialog}
+      >
+        <AddContactFormProvider form={addConForm}>
+          <form onSubmit={addConForm.onSubmit(handleAddCon)}>
+            <AddContactForm />
+          </form>
+        </AddContactFormProvider>
+      </ResponsiveDialog>
     </>
   );
 };

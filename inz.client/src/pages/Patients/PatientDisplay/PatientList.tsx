@@ -10,7 +10,7 @@ import {
   ListItem,
 } from '@mantine/core';
 import { IconUserCheck, IconUser } from '@tabler/icons-react';
-import { Paitent } from '../../types/Patient';
+import { Paitent } from '../../../types/Patient';
 import dayjs from 'dayjs';
 
 interface PatientListProps {
