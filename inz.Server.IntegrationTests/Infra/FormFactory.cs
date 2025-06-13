@@ -12,6 +12,7 @@ public static class FormFactory
         var fileName = Guid.NewGuid().ToString();
         formData.Add(fileContent, "file", fileName + ".pdf");
         formData.Add(new StringContent(fileName), "fileName");
+        formData.Add(new StringContent("12345678"), "patientId");
         return Task.FromResult(formData);
     }
 }

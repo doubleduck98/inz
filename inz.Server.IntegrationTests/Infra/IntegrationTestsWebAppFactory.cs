@@ -21,6 +21,7 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
 {
     public readonly string TestDir = Path.Combine(Path.GetTempPath(), "inz");
     public const string TestUserId = "12345678-1234-1234-1234-123456789012";
+    public const int TestPatientId = 12345678;
 
     private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder()
         .WithImage("postgres:latest")

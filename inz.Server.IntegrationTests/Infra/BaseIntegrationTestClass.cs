@@ -14,6 +14,7 @@ public class BaseIntegrationTestClass : IClassFixture<IntegrationTestWebAppFacto
     protected readonly HttpClient Client;
     protected readonly AppDbContext DbContext;
     protected readonly string TestUserId;
+    protected readonly int TestPatientId;
     protected readonly string TestDir;
 
     protected BaseIntegrationTestClass(IntegrationTestWebAppFactory factory)
@@ -27,10 +28,11 @@ public class BaseIntegrationTestClass : IClassFixture<IntegrationTestWebAppFacto
             DbContext.Database.Migrate();
         }
 
-        _seeder = new TestDataSeeder(DbContext);
-
         TestDir = factory.TestDir;
         TestUserId = IntegrationTestWebAppFactory.TestUserId;
+        TestPatientId = IntegrationTestWebAppFactory.TestPatientId;
+        
+        _seeder = new TestDataSeeder(DbContext, TestUserId, TestPatientId);
     }
 
     public Task InitializeAsync()

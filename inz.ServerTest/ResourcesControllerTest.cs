@@ -4,6 +4,7 @@ using inz.Server;
 using inz.Server.Controllers;
 using inz.Server.Dtos.Resources;
 using inz.Server.Services;
+using inz.ServerTest.Factories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -52,9 +53,8 @@ public class ResourcesControllerTest
     [Fact]
     public async Task Download_FileFound_ShouldReturn200()
     {
-        var mockStream = new Mock<Stream>().Object;
         _documentsService.Setup(d => d.GetFileStream(It.IsAny<string>(), It.IsAny<int>()))
-            .ReturnsAsync(Result.Success(new DocumentStreamDto(mockStream,"")));
+            .ReturnsAsync(DtoFactory.DocumentStreamDto);
 
         var res = await _controller.Download(It.IsAny<int>());
         Assert.IsType<FileStreamResult>(res);
@@ -63,10 +63,10 @@ public class ResourcesControllerTest
     [Fact]
     public async Task Create_ShouldReturn201()
     {
-        _documentsService.Setup(d => d.SaveDocument(It.IsAny<string>(), It.IsAny<IFormFile>(), It.IsAny<string>()))
-            .ReturnsAsync(new DocumentDto());
+        _documentsService.Setup(d => d.SaveDocument(It.IsAny<string>(), It.IsAny<CreateFileReq>()))
+            .ReturnsAsync(DtoFactory.DocumentDto);
 
-        var req = new CreateFileReq(It.IsAny<IFormFile>(), It.IsAny<string>());
+        var req = ReqFactory.CreateFileReq;
         var res = await _controller.Create(req);
 
         var okRes = res as CreatedResult;
@@ -77,13 +77,41 @@ public class ResourcesControllerTest
     [Fact]
     public async Task Create_DuplicateShouldReturn409()
     {
-        _documentsService.Setup(d => d.SaveDocument(It.IsAny<string>(), It.IsAny<IFormFile>(), It.IsAny<string>()))
+        _documentsService.Setup(d => d.SaveDocument(It.IsAny<string>(), It.IsAny<CreateFileReq>()))
             .ReturnsAsync(Result.Failure<DocumentDto>(Error.FileAlreadyExists));
 
-        var req = new CreateFileReq(It.IsAny<IFormFile>(), It.IsAny<string>());
+        var req = ReqFactory.CreateFileReq;
         var res = await _controller.Create(req);
         var confRes = res as ObjectResult;
 
+        Assert.IsType<ObjectResult>(res);
+        Assert.Equal(StatusCodes.Status409Conflict, confRes!.StatusCode);
+    }
+
+    [Fact]
+    public async Task Edit_ShouldReturn200()
+    {
+        _documentsService.Setup(d => d.EditDocument(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<EditFileReq>()))
+            .ReturnsAsync(DtoFactory.DocumentDto);
+
+        var req = ReqFactory.EditFileReq;
+        var res = await _controller.Edit(It.IsAny<int>(), req);
+
+        var okRes = res as OkObjectResult;
+        Assert.IsType<OkObjectResult>(res);
+        Assert.IsType<DocumentDto>(okRes!.Value);
+    }
+
+    [Fact]
+    public async Task Edit_DuplicateShouldReturn409()
+    {
+        _documentsService.Setup(d => d.EditDocument(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<EditFileReq>()))
+            .ReturnsAsync(Result.Failure<DocumentDto>(Error.FileAlreadyExists));
+
+        var req = ReqFactory.EditFileReq;
+        var res = await _controller.Edit(It.IsAny<int>(), req);
+
+        var confRes = res as ObjectResult;
         Assert.IsType<ObjectResult>(res);
         Assert.Equal(StatusCodes.Status409Conflict, confRes!.StatusCode);
     }
