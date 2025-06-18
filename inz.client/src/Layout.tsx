@@ -1,5 +1,6 @@
 import {
-  IconDevicesQuestion,
+  IconCalendarCog,
+  IconCalendarEvent,
   IconFileText,
   IconHome,
   IconLogout,
@@ -15,7 +16,8 @@ const linkData = [
   { link: '/', label: 'Home', icon: IconHome },
   { link: '/patients', label: 'Pacjenci', icon: IconUsers },
   { link: '/docs', label: 'Dokumenty', icon: IconFileText },
-  { link: '/test', label: 'Sale', icon: IconDevicesQuestion },
+  { link: '/schedule', label: 'Zajęcia', icon: IconCalendarEvent },
+  { link: '/bookings', label: 'Rezerwacje', icon: IconCalendarCog },
 ];
 
 function Layout() {

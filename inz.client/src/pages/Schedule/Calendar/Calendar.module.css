@@ -1,0 +1,69 @@
+:root {
+  --start-hour: 8;
+  --end-hour: 17;
+  --hour-height: 80px;
+}
+
+.header {
+  margin-bottom: var(--mantine-spacing-xs);
+}
+
+.headerText {
+  text-align: center;
+  font-weight: 700;
+  font-size: var(--mantine-font-size-lg);
+  flex: 1;
+}
+
+.time {
+  width: 60px;
+  padding-right: var(--mantine-spacing-xs);
+}
+
+.timeHr {
+  height: var(--hour-height);
+}
+
+.timeText {
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-sm);
+  transform: translateY(-50%);
+}
+
+.dayCol {
+  position: relative;
+  height: calc(var(--hour-height) * (var(--end-hour) - var(--start-hour)));
+  border-left: 1px solid var(--mantine-color-gray-2);
+  flex: 1;
+}
+
+.dayColRightBorder {
+  border-right: 1px solid var(--mantine-color-gray-2);
+}
+
+.booking {
+  position: absolute;
+  height: calc(var(--hour-height) - 4px);
+  left: 2px;
+  right: 2px;
+  margin-top: 2px;
+  padding: var(--mantine-spacing-xs);
+  z-index: 2;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  background-color: var(--mantine-color-blue-light);
+  overflow: hidden;
+}
+
+.hourStack {
+  position: absolute;
+  top: 0;
+  left: 0;
+  gap: 0;
+  width: 100%;
+}
+
+.hourLine {
+  height: var(--hour-height);
+  border-top: 1px solid var(--mantine-color-gray-3);
+}
