@@ -17,6 +17,8 @@ public class AppDbContext : IdentityDbContext<User>
         builder.ApplyConfiguration(new DocumentConfiguration());
         builder.ApplyConfiguration(new PatientConfiguration());
         builder.ApplyConfiguration(new PatientContactConfiguraation());
+        builder.ApplyConfiguration(new BookingConfiguration());
+        builder.ApplyConfiguration(new RoomConfiguration());        
         
         // for { Patient.Name, Patient Surname } index
         builder.HasPostgresExtension("pg_trgm");
@@ -26,4 +28,6 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<Document> Documents { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Patient> Patients { get; set; }
+    public DbSet<Booking> Bookings { get; set; }
+    public DbSet<Room> Rooms { get; set; }
 }

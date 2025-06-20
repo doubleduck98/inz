@@ -10,4 +10,5 @@ public class User : IdentityUser
     public List<RefreshToken> RefreshTokens { get; set; } = null!;
     public List<Document> Documents { get; set; } = null!;
     public List<Patient> Patients { get; set; } = null!;
+    public List<Booking> Bookings { get; set; } = null!;
 }

@@ -64,13 +64,22 @@ public record Error(string Type, string Message, int Code)
 
     public static readonly Error FileIllegalExtension =
         new("File.ILLEGAL_FILE_EX", "File has illegal extension", StatusCodes.Status400BadRequest);
-    
+
     public static readonly Error FileNotPresent =
         new("File.NOT_PRESENT", "File not present on server", StatusCodes.Status500InternalServerError);
-    
+
     public static readonly Error PatientAlreadyExists =
         new("Patient.ALREADY_EXISTS", "Patient already exists", StatusCodes.Status409Conflict);
 
     public static readonly Error PatientNotFound =
         new("Patient.NOT_FOUND", "Patient not found", StatusCodes.Status404NotFound);
+
+    public static readonly Error RoomNotFound =
+        new("Room.NOT_FOUND", "Room not found", StatusCodes.Status404NotFound);
+
+    public static readonly Error BookingNotFound =
+        new("Booking.NOT_FOUND", "Booking not found", StatusCodes.Status404NotFound);
+
+    public static Error BookingError(DateOnly date, int hour) =>
+        new("Booking.ALREADY_EXISTS", $"{date} {hour}", StatusCodes.Status409Conflict);
 }

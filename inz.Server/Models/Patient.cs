@@ -24,6 +24,7 @@ public class Patient
     public User? CoordinatingUser { get; set; }
     public List<PatientContact> Contacts { get; set; } = null!;
     public List<Document> Documents { get; set; } = null!;
+    public List<Booking> Bookings { get; set; } = null!;
 }
 
 public class PatientConfiguration : IEntityTypeConfiguration<Patient>
