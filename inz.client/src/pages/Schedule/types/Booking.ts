@@ -1,6 +1,9 @@
+import { Dayjs } from 'dayjs';
+
 export interface Booking {
-  time: number;
-  patientId?: string;
+  id: number;
+  hour: number;
+  date: Dayjs;
   patient: string;
-  room: string;
+  roomName: string;
 }

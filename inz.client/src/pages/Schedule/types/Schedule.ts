@@ -5,5 +5,5 @@ export interface WeekSchedule {
 }
 
 export interface DaySchedule {
-  bookings: Booking[] | null;
+  bookings: Booking[];
 }

@@ -1,11 +1,12 @@
-import { Box, Paper, Stack, Text, Flex } from '@mantine/core';
+import { Box, Stack, Text, Flex } from '@mantine/core';
 import dayjs, { Dayjs } from 'dayjs';
 import classes from './Calendar.module.css';
+import BookingCard from './Booking';
 import { DaySchedule } from '../types/Schedule';
 
 interface CalendarDayProps {
   date: Dayjs;
-  schedule: DaySchedule;
+  schedule: DaySchedule | null;
 }
 
 const START_HOUR = 8;
@@ -19,25 +20,9 @@ const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) =>
 );
 
 const CalendarDay = ({ date, schedule }: CalendarDayProps) => {
-  const bookings = schedule.bookings ?? [];
+  const bookings = schedule?.bookings ?? [];
   const bookingCards = bookings.map((booking, i) => (
-    <Paper
-      key={i}
-      className={classes.booking}
-      style={{
-        top: (booking.time - START_HOUR) * HOUR_HEIGHT,
-      }}
-    >
-      <Text fw={500} size="sm">
-        {booking.patient}
-      </Text>
-      <Text c="dimmed" size="xs">
-        {booking.room}
-      </Text>
-      <Text c="dimmed" size="xs">
-        {booking.time}:00
-      </Text>
-    </Paper>
+    <BookingCard key={i} booking={booking} />
   ));
 
   return (

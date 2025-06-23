@@ -13,86 +13,37 @@ import {
   IconChevronLeft,
   IconChevronRight,
 } from '@tabler/icons-react';
-import dayjs, { Dayjs } from 'dayjs';
-import { useEffect, useState } from 'react';
+import { Dayjs } from 'dayjs';
 import CalendarPicker from './Calendar/CalendarPicker';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
-import {
-  currentWeekFmt,
-  currentWeekMobileFmt,
-  startOfWeekDate,
-} from './Calendar/CalendarUtils';
+import { currentWeekFmt, currentWeekMobileFmt } from './Calendar/CalendarUtils';
 import CalendarDay from './Calendar/CalendarDay';
 import CalendarWeek from './Calendar/CalendarWeek';
-import { WeekSchedule } from './types/Schedule';
 import CalendarList from './Calendar/CalendarList';
-
-const mockWeek: WeekSchedule = {
-  days: [
-    {
-      bookings: [
-        {
-          time: 9,
-          patient: 'Szymon Zienkiewicz',
-          room: 'Bardzo długa nazwa sali xd',
-        },
-        { time: 15, patient: 'Bartosz Błaszczyk', room: 'Sala 1' },
-      ],
-    },
-    {
-      bookings: [{ time: 11, patient: 'Szymon Zienkiewicz', room: 'Sala 2' }],
-    },
-    {
-      bookings: [],
-    },
-    {
-      bookings: [
-        { time: 14, patient: 'Marcin Krasucki', room: 'Sala 1' },
-        { time: 15, patient: 'Daniel Zwierzyński', room: 'Sala 2' },
-        { time: 16, patient: 'Szymon Zienkiewicz', room: 'Sala 3' },
-      ],
-    },
-    {
-      bookings: [{ time: 9, patient: 'Marcin Krasucki', room: 'Sala 2' }],
-    },
-  ],
-};
+import useCalendar from './useCalendar';
+import { Display } from './types/Display';
 
 const Schedule = () => {
+  const {
+    currentDay,
+    currentWeek,
+    setDate,
+    display,
+    setDisplay,
+    // loading,
+    daySchedule,
+    weekSchedule,
+    prev,
+    next,
+    setToday,
+  } = useCalendar();
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const date = dayjs();
-  const [currentDay, setDate] = useState(date);
-  const currentWeek = startOfWeekDate(currentDay);
-  const [display, setDisplay] = useState<'day' | 'week' | 'list'>('week');
-
-  useEffect(() => {
-    if (isMobile) setDisplay('list');
-    else setDisplay('week');
-  }, [isMobile]);
-
-  const prev = () => {
-    const shift = display === 'day' ? 'day' : 'week';
-    let newDate = currentDay.subtract(1, shift);
-    if (display !== 'day') newDate = startOfWeekDate(newDate);
-    setDate(newDate);
-  };
-  const next = () => {
-    const shift = display === 'day' ? 'day' : 'week';
-    let newDate = currentDay.add(1, shift);
-    if (display !== 'day') newDate = startOfWeekDate(newDate);
-    setDate(newDate);
-  };
-  const setToday = () => setDate(dayjs());
-
   const [pop, { open: openPopover, close: closePopover }] = useDisclosure();
   const handleDateChange = (date: Dayjs) => {
     setDate(date);
     closePopover();
   };
-  const handleDisplayChange = (value: string) => {
-    if (value === 'day' || value === 'week' || value === 'list')
-      setDisplay(value);
-  };
+  const handleDisplayChange = (value: string) => setDisplay(value as Display);
   const displayControls = [
     { label: 'Dzień', value: 'day' },
     { label: 'Tydzień', value: 'week' },
@@ -152,15 +103,21 @@ const Schedule = () => {
           </Stack>
 
           {display === 'day' && (
-            <CalendarDay date={currentDay} schedule={mockWeek.days[0]} />
+            <CalendarDay date={currentDay} schedule={daySchedule} />
           )}
 
           {display === 'week' && (
-            <CalendarWeek currentDate={currentWeek} weekSchedule={mockWeek} />
+            <CalendarWeek
+              currentDate={currentWeek}
+              weekSchedule={weekSchedule}
+            />
           )}
 
           {display === 'list' && (
-            <CalendarList currentDate={currentWeek} weekSchedule={mockWeek} />
+            <CalendarList
+              currentDate={currentWeek}
+              weekSchedule={weekSchedule}
+            />
           )}
         </Grid.Col>
         <Grid.Col visibleFrom="sm" span="content">

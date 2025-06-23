@@ -1,16 +1,16 @@
-import { Box, Paper, Stack, Text, Flex } from '@mantine/core';
+import { Box, Stack, Text, Flex } from '@mantine/core';
 import dayjs, { Dayjs } from 'dayjs';
 import classes from './Calendar.module.css';
 import { WeekSchedule } from '../types/Schedule';
+import BookingCard from './Booking';
 
 interface CalendarWeekProps {
   currentDate: Dayjs;
-  weekSchedule: WeekSchedule;
+  weekSchedule: WeekSchedule | null;
 }
 
 const START_HOUR = 8;
 const END_HOUR = 17;
-const HOUR_HEIGHT = 80;
 
 const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) =>
   dayjs()
@@ -20,6 +20,7 @@ const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) =>
 
 const CalendarWeek = ({ currentDate, weekSchedule }: CalendarWeekProps) => {
   const start = currentDate.startOf('week');
+  const daySchedules = weekSchedule?.days ?? [];
   const days = Array.from({ length: 5 }, (_, i) => start.add(i, 'day'));
 
   return (
@@ -45,33 +46,16 @@ const CalendarWeek = ({ currentDate, weekSchedule }: CalendarWeekProps) => {
         </Stack>
 
         <Flex flex={1}>
-          {days.map((d, i) => {
-            const dayBookings = weekSchedule.days[i] || [];
-            const bookingCards = dayBookings.bookings!.map((booking, i) => {
-              return (
-                <Paper
-                  key={i}
-                  className={classes.booking}
-                  style={{
-                    top: (booking.time - START_HOUR) * HOUR_HEIGHT,
-                  }}
-                >
-                  <Text fw={500} size="sm" truncate>
-                    {booking.patient}
-                  </Text>
-                  <Text c="dimmed" size="xs" truncate>
-                    {booking.room}
-                  </Text>
-                  <Text c="dimmed" size="xs" truncate>
-                    {booking.time}:00
-                  </Text>
-                </Paper>
-              );
-            });
+          {days.map((_, i) => {
+            const dayBookings = daySchedules[i];
+            if (!dayBookings) return;
+            const bookingCards = dayBookings.bookings.map((booking, idx) => (
+              <BookingCard key={idx} booking={booking} />
+            ));
 
             return (
               <Box
-                key={d.format()}
+                key={i}
                 className={`${classes.dayCol} ${i === days.length - 1 ? classes.dayColRightBorder : ''}`}
               >
                 {bookingCards}
