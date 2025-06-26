@@ -80,6 +80,9 @@ public record Error(string Type, string Message, int Code)
     public static readonly Error BookingNotFound =
         new("Booking.NOT_FOUND", "Booking not found", StatusCodes.Status404NotFound);
 
-    public static Error BookingError(DateOnly date, int hour) =>
-        new("Booking.ALREADY_EXISTS", $"{date} {hour}", StatusCodes.Status409Conflict);
+    public static readonly Error BookingAlreadyExists =
+        new("Booking.ALREADY_EXISTS", "Booking already exists", StatusCodes.Status409Conflict);
+    
+    public static Error BookingError(string message) =>
+        new("Booking.ALREADY_EXISTS", message, StatusCodes.Status409Conflict);
 }
