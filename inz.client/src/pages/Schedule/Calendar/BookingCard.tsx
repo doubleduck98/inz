@@ -2,15 +2,15 @@ import { Paper, Text } from '@mantine/core';
 import { Booking } from '../types/Booking';
 import BookingActions from './BookingActions';
 import classes from './Calendar.module.css';
+import { HOUR_HEIGHT, START_HOUR } from './Constants';
 
 interface BookingCardProps {
   booking: Booking;
+  onEdit: (booking: Booking) => void;
+  onDelete: (id: number) => void;
 }
 
-const START_HOUR = 8;
-const HOUR_HEIGHT = 80;
-
-const BookingCard = ({ booking }: BookingCardProps) => {
+const BookingCard = ({ booking, onEdit, onDelete }: BookingCardProps) => {
   return (
     <Paper
       className={classes.booking}
@@ -27,7 +27,12 @@ const BookingCard = ({ booking }: BookingCardProps) => {
       <Text c="dimmed" size="xs">
         {booking.hour}:00
       </Text>
-      <BookingActions className={classes.bookingActionIcon} />
+      <BookingActions
+        booking={booking}
+        className={classes.bookingActionIcon}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
     </Paper>
   );
 };

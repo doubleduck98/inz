@@ -1,17 +1,16 @@
 import { Box, Stack, Text, Flex } from '@mantine/core';
 import dayjs, { Dayjs } from 'dayjs';
 import classes from './Calendar.module.css';
-import BookingCard from './Booking';
-import { DaySchedule } from '../types/Schedule';
+import BookingCard from './BookingCard';
+import { Booking } from '../types/Booking';
+import { END_HOUR, HOUR_HEIGHT, START_HOUR } from './Constants';
 
 interface CalendarDayProps {
   date: Dayjs;
-  schedule: DaySchedule | null;
+  schedule: Booking[];
+  onEdit: (booking: Booking) => void;
+  onDelete: (id: number) => void;
 }
-
-const START_HOUR = 8;
-const END_HOUR = 17;
-const HOUR_HEIGHT = 80;
 
 const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) =>
   dayjs()
@@ -19,10 +18,19 @@ const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) =>
     .minute(0)
 );
 
-const CalendarDay = ({ date, schedule }: CalendarDayProps) => {
-  const bookings = schedule?.bookings ?? [];
-  const bookingCards = bookings.map((booking, i) => (
-    <BookingCard key={i} booking={booking} />
+const CalendarDay = ({
+  date,
+  schedule,
+  onEdit,
+  onDelete,
+}: CalendarDayProps) => {
+  const bookingCards = schedule.map((booking, i) => (
+    <BookingCard
+      key={i}
+      booking={booking}
+      onEdit={onEdit}
+      onDelete={onDelete}
+    />
   ));
 
   return (

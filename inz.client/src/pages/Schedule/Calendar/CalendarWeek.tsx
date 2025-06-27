@@ -1,16 +1,17 @@
 import { Box, Stack, Text, Flex } from '@mantine/core';
 import dayjs, { Dayjs } from 'dayjs';
 import classes from './Calendar.module.css';
-import { WeekSchedule } from '../types/Schedule';
-import BookingCard from './Booking';
+import { WeekSchedule } from '../types/WeekSchedule';
+import BookingCard from './BookingCard';
+import { Booking } from '../types/Booking';
+import { END_HOUR, IDX_FORMAT, START_HOUR } from './Constants';
 
 interface CalendarWeekProps {
   currentDate: Dayjs;
-  weekSchedule: WeekSchedule | null;
+  weekSchedule: WeekSchedule;
+  onEdit: (booking: Booking) => void;
+  onDelete: (id: number) => void;
 }
-
-const START_HOUR = 8;
-const END_HOUR = 17;
 
 const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) =>
   dayjs()
@@ -18,9 +19,13 @@ const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) =>
     .minute(0)
 );
 
-const CalendarWeek = ({ currentDate, weekSchedule }: CalendarWeekProps) => {
+const CalendarWeek = ({
+  currentDate,
+  weekSchedule,
+  onEdit,
+  onDelete,
+}: CalendarWeekProps) => {
   const start = currentDate.startOf('week');
-  const daySchedules = weekSchedule?.days ?? [];
   const days = Array.from({ length: 5 }, (_, i) => start.add(i, 'day'));
 
   return (
@@ -46,13 +51,19 @@ const CalendarWeek = ({ currentDate, weekSchedule }: CalendarWeekProps) => {
         </Stack>
 
         <Flex flex={1}>
-          {days.map((_, i) => {
-            const dayBookings = daySchedules[i];
-            if (!dayBookings) return;
-            const bookingCards = dayBookings.bookings.map((booking, idx) => (
-              <BookingCard key={idx} booking={booking} />
-            ));
-
+          {days.map((date, i) => {
+            const daySchedule = weekSchedule[date.format(IDX_FORMAT)] || [];
+            const bookingCards =
+              weekSchedule && daySchedule
+                ? daySchedule.map((booking, idx) => (
+                    <BookingCard
+                      key={idx}
+                      booking={booking}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                    />
+                  ))
+                : [];
             return (
               <Box
                 key={i}
