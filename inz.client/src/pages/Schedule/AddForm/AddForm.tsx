@@ -26,13 +26,17 @@ import RoomSelect from '../components/RoomSelect';
 
 const IDX_FORMAT = 'YYYY-MM-DD';
 
-const AddForm = () => {
+interface AddFormProps {
+  loading: boolean;
+}
+
+const AddForm = ({ loading }: AddFormProps) => {
   dayjs.extend(utc);
   const form = useAddFormContext();
   const dates = form.getValues().dates;
   const [view, setView] = useState<'dates' | 'hours'>('dates');
   const [availableHours, setAvailable] = useState<Available>({});
-  const [loading, setLoading] = useState(false);
+  const [datesLoading, setDatesLoading] = useState(false);
 
   const handlePillRemove = (date: Dayjs) => {
     form.setFieldValue(
@@ -62,7 +66,7 @@ const AddForm = () => {
   };
 
   const fetchAvailable = async () => {
-    setLoading(true);
+    setDatesLoading(true);
     setView('hours');
     const opts = {
       url: `Bookings/GetFree`,
@@ -80,7 +84,7 @@ const AddForm = () => {
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      setDatesLoading(false);
     }
   };
 
@@ -99,7 +103,7 @@ const AddForm = () => {
         {dates.map((date) => (
           <TimePicker
             key={date.valueOf()}
-            loading={loading}
+            loading={datesLoading}
             date={date}
             onTimeSelect={handleTimeSelect}
             availableHours={availableHours[date.format(IDX_FORMAT)] || []}
@@ -127,7 +131,9 @@ const AddForm = () => {
           >
             <IconArrowLeft></IconArrowLeft>
           </Button>
-          <Button type="submit">Wyślij</Button>
+          <Button type="submit" loading={loading}>
+            Wyślij
+          </Button>
         </Group>
       </Stack>
     );

@@ -1,14 +1,15 @@
-import { Box, Stack, Text, Flex } from '@mantine/core';
+import { Box, Stack, Text, Flex, LoadingOverlay } from '@mantine/core';
 import dayjs, { Dayjs } from 'dayjs';
 import classes from './Calendar.module.css';
 import { WeekSchedule } from '../types/WeekSchedule';
 import BookingCard from './BookingCard';
 import { Booking } from '../types/Booking';
-import { END_HOUR, IDX_FORMAT, START_HOUR } from './Constants';
+import { END_HOUR, HOUR_HEIGHT, IDX_FORMAT, START_HOUR } from './Constants';
 
 interface CalendarWeekProps {
   currentDate: Dayjs;
   weekSchedule: WeekSchedule;
+  loading: boolean;
   onEdit: (booking: Booking) => void;
   onDelete: (id: number) => void;
 }
@@ -22,6 +23,7 @@ const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) =>
 const CalendarWeek = ({
   currentDate,
   weekSchedule,
+  loading,
   onEdit,
   onDelete,
 }: CalendarWeekProps) => {
@@ -29,18 +31,17 @@ const CalendarWeek = ({
   const days = Array.from({ length: 5 }, (_, i) => start.add(i, 'day'));
 
   return (
-    <Box>
+    <Box w={{ sm: 650, xl: 950 }}>
       <Flex className={classes.header}>
         <Box className={classes.time} />
         <Flex flex={1}>
           {days.map((d) => (
             <Text key={d.format()} className={classes.headerText}>
-              {d.format('dddd')}
+              {d.format('dddd')} {d.format('DD.MM')}
             </Text>
           ))}
         </Flex>
       </Flex>
-
       <Flex>
         <Stack className={classes.time} align="flex-end" gap={0}>
           {hours.map((hour, i) => (
@@ -49,8 +50,22 @@ const CalendarWeek = ({
             </Box>
           ))}
         </Stack>
-
-        <Flex flex={1}>
+        <Flex flex={1} pos="relative">
+          <LoadingOverlay
+            visible={loading}
+            overlayProps={{
+              radius: 'md',
+              top: 2,
+              left: 2,
+              right: 2,
+              blur: 2,
+              bottom: HOUR_HEIGHT,
+            }}
+            transitionProps={{
+              transition: 'fade',
+              duration: 150,
+            }}
+          />
           {days.map((date, i) => {
             const daySchedule = weekSchedule[date.format(IDX_FORMAT)] || [];
             const bookingCards =

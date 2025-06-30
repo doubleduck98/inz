@@ -11,7 +11,7 @@
 .headerText {
   text-align: center;
   font-weight: 700;
-  font-size: var(--mantine-font-size-lg);
+  font-size: var(--mantine-font-size-md);
   flex: 1;
 }
 
@@ -70,6 +70,6 @@
 
 .bookingActionIcon {
   position: absolute;
-  top: 6px;
-  right: 8px;
+  top: 2px;
+  right: 2px;
 }

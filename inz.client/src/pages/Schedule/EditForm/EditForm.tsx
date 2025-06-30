@@ -3,7 +3,11 @@ import RoomSelect from '../components/RoomSelect';
 import PatientSelect from '../components/PatientSelect';
 import { useEditFormContext } from './EditFormContext';
 
-const EditForm = () => {
+interface EditFormProps {
+  loading: boolean;
+}
+
+const EditForm = ({ loading }: EditFormProps) => {
   const form = useEditFormContext();
   return (
     <Stack>
@@ -19,7 +23,7 @@ const EditForm = () => {
         setRoomValue={(value) => form.setFieldValue('room', value)}
         setRoomIdValue={(value) => form.setFieldValue('roomId', value)}
       />
-      <Button type="submit" disabled={!form.isDirty()}>
+      <Button type="submit" loading={loading} disabled={!form.isDirty()}>
         Zaktualizuj
       </Button>
     </Stack>

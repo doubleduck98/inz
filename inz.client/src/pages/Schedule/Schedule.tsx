@@ -17,9 +17,6 @@ import dayjs, { Dayjs } from 'dayjs';
 import CalendarPicker from './Calendar/CalendarPicker';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { currentWeekFmt, currentWeekMobileFmt } from './Calendar/CalendarUtils';
-import CalendarDay from './Calendar/CalendarDay';
-import CalendarWeek from './Calendar/CalendarWeek';
-import CalendarList from './Calendar/CalendarList';
 import useSchedule from './useSchedule';
 import { Display } from './types/Display';
 import ResponsiveDialog from '../../ResponsiveDialog';
@@ -30,6 +27,8 @@ import { ApiError } from '../../types/ApiError';
 import { EditFormProvider, useEditForm } from './EditForm/EditFormContext';
 import { Booking } from './types/Booking';
 import EditForm from './EditForm/EditForm';
+import Calendar from './Calendar/Calendar';
+import { useState } from 'react';
 
 const Schedule = () => {
   const {
@@ -38,7 +37,7 @@ const Schedule = () => {
     setDate,
     display,
     setDisplay,
-    // loading,
+    loading,
     daySchedule,
     weekSchedule,
     addBooking,
@@ -54,6 +53,7 @@ const Schedule = () => {
     useDisclosure();
   const [editFormDialog, { open: openEditForm, close: closeEditForm }] =
     useDisclosure();
+  const [formLoading, setFormLoading] = useState(false);
   const handleDateChange = (date: Dayjs) => {
     setDate(date);
     closePopover();
@@ -85,6 +85,7 @@ const Schedule = () => {
       return;
     }
     try {
+      setFormLoading(true);
       await addBooking(addForm.getValues());
       addForm.reset();
       closeAddForm();
@@ -104,6 +105,8 @@ const Schedule = () => {
           addForm.setErrors(errors);
         }
       }
+    } finally {
+      setFormLoading(false);
     }
   };
 
@@ -138,6 +141,7 @@ const Schedule = () => {
 
   const handleSubmitEdit = async () => {
     try {
+      setFormLoading(true);
       await editBooking(editForm.getValues());
       editForm.reset();
       closeEditForm();
@@ -151,6 +155,8 @@ const Schedule = () => {
           );
         }
       }
+    } finally {
+      setFormLoading(false);
     }
   };
 
@@ -173,89 +179,70 @@ const Schedule = () => {
   ];
 
   return (
-    <Container fluid>
-      <Grid>
+    <Container fluid maw={1300}>
+      <Grid justify="center">
         <Grid.Col span="auto">
-          <Stack gap="lg" mb="lg">
-            <Group justify="space-between" visibleFrom="sm"></Group>
-            <Stack mt={{ base: 'md', sm: 0 }} gap="xs">
-              <Group
-                justify="center"
-                hiddenFrom="sm"
-                grow
-                preventGrowOverflow={false}
-              >
-                <SegmentedControl
-                  size="md"
-                  maw={'60%'}
-                  value={display}
-                  onChange={handleDisplayChange}
-                  withItemsBorders={false}
-                  data={mobileDispControls}
-                />
-                <Button variant="gradient" onClick={openAddForm}>
-                  Dodaj
+          <Stack gap="lg" mb="lg" align={isMobile ? '' : 'center'}>
+            <Group
+              justify="center"
+              hiddenFrom="sm"
+              grow
+              preventGrowOverflow={false}
+            >
+              <SegmentedControl
+                size="md"
+                maw={'60%'}
+                value={display}
+                onChange={handleDisplayChange}
+                withItemsBorders={false}
+                data={mobileDispControls}
+              />
+              <Button variant="gradient" onClick={openAddForm}>
+                Dodaj
+              </Button>
+            </Group>
+            <Popover withOverlay opened={pop} onDismiss={closePopover}>
+              <Popover.Target>
+                <Button
+                  variant="transparent"
+                  color="gray"
+                  h={60}
+                  onClick={openPopover}
+                  leftSection={
+                    <IconCalendarSearch
+                      style={{ padding: 2 }}
+                      size={isMobile ? 24 : 40}
+                    />
+                  }
+                >
+                  <Text fw={500} fz={{ base: 24, sm: 40 }}>
+                    {display === 'day'
+                      ? currentDay.format('DD MMMM YYYY')
+                      : isMobile
+                        ? currentWeekMobileFmt(currentDay)
+                        : currentWeekFmt(currentDay)}
+                  </Text>
                 </Button>
-              </Group>
-              <Popover withOverlay opened={pop} onDismiss={closePopover}>
-                <Popover.Target>
-                  <Button
-                    variant="transparent"
-                    color="gray"
-                    onClick={openPopover}
-                    leftSection={
-                      <IconCalendarSearch
-                        style={{ padding: 2 }}
-                        size={isMobile ? 24 : 40}
-                      />
-                    }
-                  >
-                    <Text fw={500} fz={{ base: 24, sm: 40 }}>
-                      {display === 'day'
-                        ? currentDay.format('DD MMMM YYYY')
-                        : isMobile
-                          ? currentWeekMobileFmt(currentDay)
-                          : currentWeekFmt(currentDay)}
-                    </Text>
-                  </Button>
-                </Popover.Target>
-                <Popover.Dropdown>
-                  <CalendarPicker
-                    date={currentDay.format()}
-                    setDate={handleDateChange}
-                    display={display}
-                  />
-                </Popover.Dropdown>
-              </Popover>
-            </Stack>
+              </Popover.Target>
+              <Popover.Dropdown>
+                <CalendarPicker
+                  date={currentDay.format()}
+                  setDate={handleDateChange}
+                  display={display}
+                />
+              </Popover.Dropdown>
+            </Popover>
+            <Calendar
+              display={display}
+              loading={loading}
+              currentDay={currentDay}
+              currentWeek={currentWeek}
+              daySchedule={daySchedule}
+              weekSchedule={weekSchedule}
+              onEdit={handleEditBooking}
+              onDelete={handleDeleteBooking}
+            />
           </Stack>
-
-          {display === 'day' && (
-            <CalendarDay
-              date={currentDay}
-              schedule={daySchedule}
-              onEdit={handleEditBooking}
-              onDelete={handleDeleteBooking}
-            />
-          )}
-
-          {display === 'week' && (
-            <CalendarWeek
-              currentDate={currentWeek}
-              weekSchedule={weekSchedule}
-              onEdit={handleEditBooking}
-              onDelete={handleDeleteBooking}
-            />
-          )}
-
-          {display === 'list' && (
-            <CalendarList
-              currentDate={currentWeek}
-              weekSchedule={weekSchedule}
-              onEdit={handleEditBooking}
-              onDelete={handleDeleteBooking}
-            />
-          )}
         </Grid.Col>
         <Grid.Col visibleFrom="sm" span="content">
           <Stack>
@@ -293,7 +280,7 @@ const Schedule = () => {
       >
         <AddFormProvider form={addForm}>
           <form onSubmit={addForm.onSubmit(handleSubmitAdd)}>
-            <AddForm />
+            <AddForm loading={formLoading} />
           </form>
         </AddFormProvider>
       </ResponsiveDialog>
@@ -305,7 +292,7 @@ const Schedule = () => {
       >
         <EditFormProvider form={editForm}>
           <form onSubmit={editForm.onSubmit(handleSubmitEdit)}>
-            <EditForm />
+            <EditForm loading={formLoading} />
           </form>
         </EditFormProvider>
       </ResponsiveDialog>

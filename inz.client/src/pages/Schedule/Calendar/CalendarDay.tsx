@@ -1,4 +1,4 @@
-import { Box, Stack, Text, Flex } from '@mantine/core';
+import { Box, Stack, Text, Flex, LoadingOverlay } from '@mantine/core';
 import dayjs, { Dayjs } from 'dayjs';
 import classes from './Calendar.module.css';
 import BookingCard from './BookingCard';
@@ -8,6 +8,7 @@ import { END_HOUR, HOUR_HEIGHT, START_HOUR } from './Constants';
 interface CalendarDayProps {
   date: Dayjs;
   schedule: Booking[];
+  loading: boolean;
   onEdit: (booking: Booking) => void;
   onDelete: (id: number) => void;
 }
@@ -21,6 +22,7 @@ const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) =>
 const CalendarDay = ({
   date,
   schedule,
+  loading,
   onEdit,
   onDelete,
 }: CalendarDayProps) => {
@@ -34,7 +36,7 @@ const CalendarDay = ({
   ));
 
   return (
-    <Box>
+    <Box w={{ sm: 650 }}>
       <Flex className={classes.header}>
         <Box w={{ base: 40, sm: 60 }} />
         <Flex flex={1}>
@@ -52,6 +54,14 @@ const CalendarDay = ({
         </Stack>
 
         <Box className={`${classes.dayCol} ${classes.dayColRightBorder}`}>
+          <LoadingOverlay
+            visible={loading}
+            overlayProps={{ radius: 'md', top: 2, blur: 2 }}
+            transitionProps={{
+              transition: 'fade',
+              duration: 200,
+            }}
+          />
           {bookingCards}
           <Stack className={classes.hourStack} gap={0}>
             {hours.map((_, index) => (
