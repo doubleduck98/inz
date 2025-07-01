@@ -1,5 +1,4 @@
 import {
-  IconCalendarCog,
   IconCalendarEvent,
   IconFileText,
   IconHome,
@@ -17,7 +16,6 @@ const linkData = [
   { link: '/patients', label: 'Pacjenci', icon: IconUsers },
   { link: '/docs', label: 'Dokumenty', icon: IconFileText },
   { link: '/schedule', label: 'Zajęcia', icon: IconCalendarEvent },
-  { link: '/bookings', label: 'Rezerwacje', icon: IconCalendarCog },
 ];
 
 function Layout() {

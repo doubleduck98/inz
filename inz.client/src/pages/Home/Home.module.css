@@ -1,0 +1,189 @@
+:root {
+  --card-max-w: 350px;
+  --card-min-w: 180px;
+}
+
+.welcomeCard {
+  background-image: linear-gradient(
+    var(--mantine-color-gray-1) 0%,
+    var(--mantine-color-blue-2) 100%
+  );
+  flex-grow: 1;
+  flex-shrink: 1;
+  border-radius: var(--mantine-radius-md);
+  padding-top: var(--mantine-spacing-xl);
+  box-shadow: var(--mantine-shadow-md);
+  text-align: center;
+
+  @media (max-width: $mantine-breakpoint-sm) {
+    padding-bottom: 1em;
+    min-height: fit-content;
+    margin-top: var(--mantine-spacing-md);
+  }
+}
+
+.calendarCard {
+  background-image: linear-gradient(
+    -60deg,
+    var(--mantine-color-blue-4) 0%,
+    var(--mantine-color-blue-7) 100%
+  );
+  padding: var(--mantine-spacing-xl);
+  border-radius: var(--mantine-radius-md);
+  display: flex;
+  position: relative;
+  height: 350px;
+  max-width: calc(2 * var(--card-max-w) + var(--mantine-spacing-md));
+  min-width: calc(2 * var(--card-min-w) + var(--mantine-spacing-md));
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-direction: row;
+
+  @media (max-width: $mantine-breakpoint-xs) {
+    flex-direction: column;
+  }
+
+  @media (max-width: $mantine-breakpoint-sm) {
+    min-width: 100%;
+    height: fit-content;
+    padding: var(--mantine-spacing-md);
+    padding-top: var(--mantine-spacing-xl);
+    padding-bottom: var(--mantine-spacing-xl);
+  }
+}
+
+.bookingCard {
+  background-color: var(--mantine-color-white);
+  padding: var(--mantine-spacing-xs);
+  min-height: auto;
+  width: 100%;
+}
+
+.day {
+  font-size: 44px;
+  font-weight: 700;
+  color: var(--mantine-color-white);
+  line-height: 1;
+  text-align: center;
+  margin-bottom: 5px;
+  font-family: Outfit, var(--mantine-font-family);
+}
+
+.month {
+  font-size: var(--mantine-font-size-sm);
+  color: var(--mantine-color-white);
+  line-height: 1;
+  text-align: center;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  margin-right: var(--mantine-spacing-xl);
+
+  @media (max-width: $mantine-breakpoint-xs) {
+    flex-direction: row;
+    align-items: center;
+    margin-right: 0;
+    margin-bottom: var(--mantine-spacing-xl);
+  }
+}
+
+.date {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.control {
+  height: 28px;
+  width: 100%;
+  color: var(--mantine-color-blue-2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: var(--mantine-radius-md);
+  transition: background-color 50ms ease;
+
+  @media (max-width: $mantine-breakpoint-xs) {
+    height: 34px;
+    width: 34px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+
+  @mixin hover {
+    background-color: var(--mantine-color-blue-5);
+    color: var(--mantine-color-white);
+  }
+}
+
+.controlIcon {
+  @media (max-width: $mantine-breakpoint-xs) {
+    transform: rotate(-90deg);
+  }
+}
+
+.actionCard {
+  background: no-repeat;
+  position: relative;
+  flex-direction: column;
+  justify-content: space-between;
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-basis: var(--card-min-w);
+}
+
+.bigCard {
+  min-height: 280px;
+  max-width: var(--card-max-w);
+  min-width: var(--card-min-w);
+  background-size: 160px;
+  background-position: right bottom;  
+}
+
+.smallCard {
+  min-height: 200px;
+  min-width: 100%;
+  background-size: 120px;
+  background-position: right 8px bottom;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1;
+  border-radius: var(--mantine-radius-md);
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+  padding: var(--mantine-spacing-md);
+  display: flex;
+  flex:1;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.title {
+  color: var(--mantine-color-white);
+  margin-bottom: 5px;
+}
+
+.description {
+  color: var(--mantine-color-gray-4);
+  margin-bottom: var(--mantine-spacing-md);
+}
+
+.action {
+  align-self: flex-start;
+}
