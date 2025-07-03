@@ -110,10 +110,6 @@ export default defineConfig({
         target,
         secure: false,
       },
-      '^/LoginPage': {
-        target,
-        secure: false,
-      },
       '^/Patients': {
         target,
         secure: false,
@@ -128,5 +124,8 @@ export default defineConfig({
       key: fs.readFileSync(keyFilePath),
       cert: fs.readFileSync(certFilePath),
     },
+  },
+  define: {
+    'import.meta.env.TARGET_URL': JSON.stringify(target),
   },
 });

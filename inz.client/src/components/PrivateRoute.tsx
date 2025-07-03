@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
-import { useAuth } from './hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
+import Login from '@/pages/Login/Login';
 
 const PrivateRoute = () => {
   const { user, loading } = useAuth();
@@ -9,7 +10,7 @@ const PrivateRoute = () => {
   }
 
   if (!user) {
-    window.location.replace('https://localhost:7258/Account/Login');
+    return <Login />;
   }
 
   return <Outlet />;
