@@ -37,7 +37,7 @@ public class BookingService : IBookingsService
         return await _db.Bookings.Include(b => b.Patient)
             .Include(b => b.Room)
             .Where(b => b.UserId == userId && b.Date == date)
-            .Select(b => new BookingDto(b.Id, b.Hour, b.Date, b.Room.Name, $"{b.Patient.Name} {b.Patient.Surname}"))
+            .Select(b => new BookingDto(b, b.Patient, b.Room))
             .ToListAsync();
     }
 
@@ -54,7 +54,7 @@ public class BookingService : IBookingsService
             .ToDictionaryAsync(
                 grp => grp.Key,
                 grp => grp.Select(b =>
-                        new BookingDto(b.Id, b.Hour, b.Date, b.Room.Name, $"{b.Patient.Name} {b.Patient.Surname}"))
+                        new BookingDto(b, b.Patient, b.Room))
                     .ToList());
 
         return bookings;
@@ -133,7 +133,7 @@ public class BookingService : IBookingsService
         await _db.SaveChangesAsync();
 
         return bookingEnts
-            .Select(b => new BookingDto(b.Id, b.Hour, b.Date, room.Name, $"{patient.Name} {patient.Surname}"))
+            .Select(b => new BookingDto(b, b.Patient, b.Room))
             .ToList();
     }
 

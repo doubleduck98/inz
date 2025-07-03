@@ -1,6 +1,9 @@
 namespace inz.Server.Dtos.Auth;
 
 public record LoginResp(
-    UserDto User,
-    string Token
+    string Name,
+    string Surname,
+    string Email,
+    string Token,
+    string RefreshToken
 );

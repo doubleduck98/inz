@@ -10,10 +10,9 @@ namespace inz.Server.Controllers;
 
 [ApiController]
 [Route("[controller]/[action]")]
-public class AuthController : ControllerBase
+public class AuthController : ApiBaseController
 {
     private readonly IAuthService _auth;
-
 
     public AuthController(IAuthService authService)
     {
@@ -24,10 +23,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginReq model)
     {
         var res = await _auth.LoginAsync(model.Email, model.Password);
-        if (res.IsFailure) return Problem(res.Error!.Message, type: res.Error!.Type, statusCode: res.Error!.Code);
-
-        _auth.SetCookie(HttpContext.Response, res.Value.Token);
-        return Ok(res.Value.User);
+        return res.IsSuccess ? Ok(res.Value) : ProblemResponse(res);
     }
 
     [HttpGet]
@@ -35,39 +31,32 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> GetToken()
     {
         var userId = HttpContext.User.FindFirst("userId");
-        var res = await _auth.LoginWithToken(userId!.Value);
-
-        _auth.SetCookie(HttpContext.Response, res.Token);
-        return Ok(res.User);
+        if (userId == null) throw new AuthenticationFailureException("User id claim not found");
+        
+        var res = await _auth.LoginWithToken(userId.Value);
+        return Ok(res);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Refresh([FromBody] RefreshReq model)
+    public async Task<IActionResult> Refresh([FromBody] RefreshReq req)
     {
-        var res = await _auth.RefreshTokenAsync(model.Token);
-        if (res.IsFailure) return Problem(res.Error!.Message, type: res.Error!.Type, statusCode: res.Error!.Code);
-
-        _auth.SetCookie(HttpContext.Response, res.Value.Token);
-        return Ok(new { res.Value.RefreshToken });
+        var res = await _auth.RefreshTokenAsync(req.Token);
+        return res.IsSuccess ? Ok(res.Value) : ProblemResponse(res);
     }
 
     [HttpPost]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public async Task<IActionResult> Logout([FromBody] LogoutReq model)
+    public async Task<IActionResult> Logout([FromBody] LogoutReq req)
     {
-        var userId = HttpContext.User.FindFirst("Sub")?.Value ??
-                     throw new AuthenticationFailureException("User id claim not found");
-        var res = await _auth.InvalidateUserTokenAsync(userId, model.Token);
-        return res.IsSuccess ? Ok() : BadRequest(res.Error!.Message);
+        var res = await _auth.InvalidateUserTokenAsync(UserId, req.Token);
+        return res.IsSuccess ? Ok() : ProblemResponse(res);
     }
 
     [HttpPost]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public async Task<IActionResult> Revoke()
     {
-        var userId = HttpContext.User.FindFirst("Sub")?.Value ??
-                     throw new AuthenticationFailureException("User id claim not found");
-        await _auth.InvalidateAllUserTokensAsync(userId);
+        await _auth.InvalidateAllUserTokensAsync(UserId);
         return Ok();
     }
 }

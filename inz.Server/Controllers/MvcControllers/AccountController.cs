@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 namespace inz.Server.Controllers.MvcControllers;
 
@@ -29,18 +30,23 @@ public class AccountController : Controller
         if (!ModelState.IsValid) return View(model);
 
         var resp = await _authService.SignIn(model.Email, model.Password, HttpContext);
-        if (resp.IsSuccess) return Redirect("https://localhost:5173");
-        
+        if (resp.IsSuccess)
+        {
+            var returnUrl = HttpContext.Request.Query["returnUrl"];
+            var redirectUrl = returnUrl.IsNullOrEmpty()
+                ? "https://localhost:5173"
+                : $"https://localhost:5173/{returnUrl}";
+            return Redirect(redirectUrl);
+        }
+
         ModelState.AddModelError("Auth", "Nieprawidłowe dane logowania");
         return View(model);
     }
 
     [HttpGet]
-    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync();
-        HttpContext.Response.Cookies.Delete("jwt");
-        return RedirectToAction("Login");
+        return LocalRedirect("/Account/Login");
     }
 }

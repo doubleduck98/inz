@@ -5,7 +5,6 @@ using inz.Server.Data;
 using inz.Server.Models;
 using inz.Server.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -49,20 +48,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         {
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]!)),
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"]
-        };
-        o.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
-            {
-                var cookie = context.Request.Cookies["jwt"];
-                if (!cookie.IsNullOrEmpty())
-                {
-                    context.Token = cookie;
-                }
-
-                return Task.CompletedTask;
-            }
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ClockSkew = TimeSpan.Zero
         };
     });
 

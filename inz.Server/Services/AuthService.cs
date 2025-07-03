@@ -15,8 +15,7 @@ public interface IAuthService
     public Task<Result<RefreshResp>> RefreshTokenAsync(string token);
     public Task<Result> InvalidateUserTokenAsync(string userId, string token);
     public Task InvalidateAllUserTokensAsync(string userId);
-    public void SetCookie(HttpResponse response, string token);
-
+    
     public Task<Result> SignIn(string email, string password, HttpContext context);
     public Task<LoginResp> LoginWithToken(string userId);
 }
@@ -50,7 +49,7 @@ public class AuthService : IAuthService
             { User = user, Value = refreshToken, ExpiresAtUtc = DateTime.UtcNow.AddDays(7) });
         await _db.SaveChangesAsync();
 
-        return new LoginResp(new UserDto(user.Name ?? "", user.Surname ?? "", user.Email ?? "", refreshToken), token);
+        return new LoginResp(user.Name ?? "", user.Surname ?? "", user.Email ?? "", token, refreshToken);
     }
 
     public async Task<Result<RefreshResp>> RefreshTokenAsync(string token)
@@ -92,16 +91,6 @@ public class AuthService : IAuthService
         }
     }
 
-    public void SetCookie(HttpResponse response, string token)
-    {
-        response.Cookies.Append("jwt", token, new CookieOptions
-        {
-            HttpOnly = true,
-            // Secure = true,
-            SameSite = SameSiteMode.Strict
-        });
-    }
-
     public async Task<Result> SignIn(string email, string password, HttpContext context)
     {
         var user = await _userManager.FindByEmailAsync(email);
@@ -132,6 +121,6 @@ public class AuthService : IAuthService
             { User = user, Value = refreshToken, ExpiresAtUtc = DateTime.UtcNow.AddDays(7) });
         await _db.SaveChangesAsync();
 
-        return new LoginResp(new UserDto(user.Name ?? "", user.Surname ?? "", user.Email ?? "", refreshToken), token);
+        return new LoginResp(user.Name ?? "", user.Surname ?? "", user.Email ?? "", token, refreshToken);
     }
 }
