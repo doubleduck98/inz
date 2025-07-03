@@ -1,6 +1,7 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import { User } from '@/types/User';
 import { createUnauthorizedEvent } from './Events';
+import { RefreshResponse } from '@/types/RefreshResponse';
 
 const axiosInstance = axios.create({
   headers: { 'Content-Type': 'application/json' },
@@ -30,11 +31,6 @@ axiosInstance.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
-
-interface RefreshResponse {
-  token: string;
-  refreshToken: string;
-}
 
 /**
  * Intercept any 401 Unauthorized responses. Keep a queue of rejected requests

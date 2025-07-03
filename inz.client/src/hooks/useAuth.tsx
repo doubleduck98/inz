@@ -3,9 +3,9 @@
 import { createContext, ReactNode, useContext, useEffect } from 'react';
 import { useState } from 'react';
 import { User } from '../types/User';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { UNAUTHORIZED } from '../utils/Events';
-import axiosInstance from '@/utils/Axios';
+import { RefreshResponse } from '@/types/RefreshResponse';
 
 interface AuthContextType {
   user: User | null;
@@ -32,16 +32,59 @@ export const Authorize = ({ children }: Props) => {
     const userString = localStorage.getItem('user');
     if (userString) {
       const user: User = JSON.parse(userString);
-      const opts = {
-        url: 'Auth/Logout',
-        method: 'POST',
-        data: { token: user.refreshToken },
-      };
-      await axiosInstance.request(opts);
+      await invalidateToken(user);
     }
     setUser(null);
     localStorage.removeItem('user');
     window.location.replace(`${TARGET_URL}/Account/Logout`);
+  };
+
+  /**
+   * Performs a call to the server to invalidate user's refresh token.
+   */
+  const invalidateToken = async (user: User) => {
+    const callLogout = async (token: string, refreshToken: string) => {
+      const opts = {
+        url: 'Auth/Logout',
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${token}`,
+        },
+        data: { token: refreshToken },
+      };
+      // use axios instance **without** refreshing token (failed call to /auth/logout would
+      // result in infinite loop of intercepting 401 -> logout fail -> intercepting 401..)
+      await axios.request(opts);
+    };
+
+    try {
+      await callLogout(user.token, user.refreshToken);
+    } catch (e) {
+      // handle edge case when trying to call logout with an expired token
+      // manually refresh on unsuccessful call, and try again
+      if (e instanceof AxiosError && e.response) {
+        const error = e as AxiosError;
+        if (error.status && error.status !== 401) {
+          console.error(e);
+          return;
+        }
+
+        const opts = {
+          url: 'Auth/Refresh',
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          data: { token: user.refreshToken },
+        };
+        try {
+          const { data } = await axios.request<RefreshResponse>(opts);
+          await callLogout(data.token, data.refreshToken);
+        } catch {
+          // if can't refresh here, just return and proceed with logout
+          return;
+        }
+      }
+    }
   };
 
   /**
