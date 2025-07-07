@@ -1,18 +1,16 @@
 import { useState } from 'react';
-import { Paitent } from '../../types/Patient';
+import { Paitent } from '@/types/Patient';
 import AddForm from './AddForm/AddForm';
 import {
   AddFormProvider,
   useAddForm,
   ValidatePatientForm,
 } from './AddForm/AddFormContext';
-import classes from './Patients.module.css';
-import { randomId, useDisclosure } from '@mantine/hooks';
-import dayjs from 'dayjs';
-import { Box, Drawer, Grid, Modal } from '@mantine/core';
+import { randomId, useDisclosure, useMediaQuery } from '@mantine/hooks';
+import { Center, Container, Grid, Text } from '@mantine/core';
 import PatientList from './PatientDisplay/PatientList';
 import PatientDetailsDisplay from './PatientDisplay/PatientDetailsDisplay';
-import ResponsiveDialog from '../../ResponsiveDialog';
+import ResponsiveDialog from '@/components/ResponsiveDialog';
 import EditForm from './EditForm/EditForm';
 import {
   EditFormProvider,
@@ -21,7 +19,7 @@ import {
   ValidateEditForm,
 } from './EditForm/EditFormContext';
 import { AxiosError } from 'axios';
-import { ApiError } from '../../types/ApiError';
+import { ApiError } from '@/types/ApiError';
 import {
   AddContactFormProvider,
   useAddContactForm,
@@ -29,11 +27,13 @@ import {
 } from './AddContactForm/AddContactFormContext';
 import AddContactForm from './AddContactForm/AddContactForm';
 import { usePatients } from './usePatients';
+import dayjs from 'dayjs';
+
+const DATE_FORMAT = 'YYYY-MM-DD';
 
 const Patients = () => {
-  const [modalOpened, { open: openModal, close: closeModal }] =
-    useDisclosure(false);
-  const [drawerOpened, { open: openDrawer, close: closeDrawer }] =
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const [addDialogOpened, { open: openAddDialog, close: closeAddDialog }] =
     useDisclosure(false);
   const [editDialogOpened, { open: openEditDialog, close: closeEditDialog }] =
     useDisclosure(false);
@@ -45,11 +45,10 @@ const Patients = () => {
   const {
     selectedPatientId,
     setSelectedPatientId,
-    searchTerm,
-    setSearchTerm,
-    filteredPatients,
+    patients,
+    patientsLoading,
     patientDetails,
-    patientLoading,
+    detailsLoading,
     addPatient,
     editPatient,
     addContactToPatient,
@@ -59,9 +58,9 @@ const Patients = () => {
   const addForm = useAddForm({
     mode: 'uncontrolled',
     initialValues: {
-      name: 'Szymon',
-      surname: 'Zienkiewicz',
-      dob: dayjs('1998-11-16').toDate(),
+      name: '',
+      surname: '',
+      dob: null,
       street: '',
       house: '',
       apartment: '',
@@ -82,10 +81,11 @@ const Patients = () => {
   const handleAdd = async () => {
     const formData = addForm.getValues();
     if (!formData.hasContacts) formData.contacts = [];
+    formData.dob = dayjs(formData.dob).format(DATE_FORMAT);
 
     try {
       await addPatient(formData);
-      closeDrawer();
+      closeAddDialog();
       addForm.reset();
       setActive(0);
     } catch (e) {
@@ -125,6 +125,7 @@ const Patients = () => {
 
   const handleEdit = async () => {
     const data = editForm.getValues();
+    data.dob = dayjs(data.dob).format(DATE_FORMAT);
 
     try {
       await editPatient(data);
@@ -199,62 +200,11 @@ const Patients = () => {
     openAddConDialog();
   };
 
-  const addFormBody = (
-    <AddFormProvider form={addForm}>
-      <form onSubmit={addForm.onSubmit(handleAdd)}>
-        <AddForm active={active} setActive={setActive} />
-      </form>
-    </AddFormProvider>
-  );
-
   return (
     <>
-      <Modal
-        opened={modalOpened}
-        onClose={closeModal}
-        title="Dodaj nowego pacjenta"
-      >
-        {addFormBody}
-      </Modal>
-      <Drawer
-        opened={drawerOpened}
-        onClose={closeDrawer}
-        title="Dodaj nowego pacjenta"
-        size="100%"
-        offset={14}
-        radius="md"
-        position="right"
-        classNames={{ header: classes.drawerHeader }}
-      >
-        {addFormBody}
-      </Drawer>
-
-      <Box hiddenFrom="sm">
-        {selectedPatientId ? (
-          <PatientDetailsDisplay
-            onBack={() => {
-              setSelectedPatientId(null);
-            }}
-            onEdit={handleEditClick}
-            onAddContact={handleAddConClick}
-            patient={patientDetails}
-            loading={patientLoading}
-          />
-        ) : (
-          <PatientList
-            openDrawer={openDrawer}
-            searchTerm={searchTerm}
-            filteredPatients={filteredPatients}
-            onSearchChange={(event) => setSearchTerm(event.currentTarget.value)}
-            onPatientClick={handlePatientClick}
-            selectedPatientId={selectedPatientId}
-          />
-        )}
-      </Box>
-
-      <Grid visibleFrom="sm">
-        <Grid.Col span="auto">
-          {selectedPatientId ? (
+      <Container fluid maw={1300}>
+        {isMobile &&
+          (selectedPatientId ? (
             <PatientDetailsDisplay
               onBack={() => {
                 setSelectedPatientId(null);
@@ -262,23 +212,61 @@ const Patients = () => {
               onEdit={handleEditClick}
               onAddContact={handleAddConClick}
               patient={patientDetails}
-              loading={patientLoading}
+              loading={detailsLoading}
             />
           ) : (
-            <div>xd</div>
-          )}
-        </Grid.Col>
-        <Grid.Col span="content">
-          <PatientList
-            openModal={openModal}
-            searchTerm={searchTerm}
-            filteredPatients={filteredPatients}
-            onSearchChange={(event) => setSearchTerm(event.currentTarget.value)}
-            onPatientClick={handlePatientClick}
-            selectedPatientId={selectedPatientId}
-          />
-        </Grid.Col>
-      </Grid>
+            <PatientList
+              openDialog={openAddDialog}
+              patients={patients}
+              loading={patientsLoading}
+              onPatientClick={handlePatientClick}
+              selectedPatientId={selectedPatientId}
+            />
+          ))}
+
+        {!isMobile && (
+          <Grid>
+            <Grid.Col span="auto">
+              {selectedPatientId ? (
+                <PatientDetailsDisplay
+                  onBack={() => {
+                    setSelectedPatientId(null);
+                  }}
+                  onEdit={handleEditClick}
+                  onAddContact={handleAddConClick}
+                  patient={patientDetails}
+                  loading={detailsLoading}
+                />
+              ) : (
+                <Center h="80vh" style={{ alignContent: 'center' }}>
+                  <Text c="dimmed">Wybierz pacjenta z listy</Text>
+                </Center>
+              )}
+            </Grid.Col>
+            <Grid.Col span="content">
+              <PatientList
+                openDialog={openAddDialog}
+                patients={patients}
+                loading={patientsLoading}
+                onPatientClick={handlePatientClick}
+                selectedPatientId={selectedPatientId}
+              />
+            </Grid.Col>
+          </Grid>
+        )}
+      </Container>
+
+      <ResponsiveDialog
+        title="Dodaj nowego pacjenta"
+        opened={addDialogOpened}
+        onClose={closeAddDialog}
+      >
+        <AddFormProvider form={addForm}>
+          <form onSubmit={addForm.onSubmit(handleAdd)}>
+            <AddForm active={active} setActive={setActive} />
+          </form>
+        </AddFormProvider>
+      </ResponsiveDialog>
 
       <ResponsiveDialog
         title={'Edytuj'}

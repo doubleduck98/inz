@@ -15,7 +15,7 @@ interface Contact {
 export interface AddFormValues {
   name: string;
   surname: string;
-  dob: Date | null;
+  dob: string | null;
   street: string;
   house: string;
   apartment: string | null;

@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
-import axiosInstance from '../../Axios';
-import { Paitent } from '../../types/Patient';
+import { useState, useCallback, useEffect } from 'react';
+import axiosInstance from '@/utils/Axios';
+import { Paitent } from '@/types/Patient';
 import { PatientDetails } from './PatientDisplay/PatientDetails';
 import { AddFormValues } from './AddForm/AddFormContext';
 import { EditFormValues } from './EditForm/EditFormContext';
@@ -9,12 +9,10 @@ import { AddContactFormValues } from './AddContactForm/AddContactFormContext';
 interface UsePatients {
   selectedPatientId: number | null;
   setSelectedPatientId: (id: number | null) => void;
-  searchTerm: string;
-  setSearchTerm: (term: string) => void;
   patients: Paitent[];
-  filteredPatients: Paitent[];
+  patientsLoading: boolean;
   patientDetails: PatientDetails | null;
-  patientLoading: boolean;
+  detailsLoading: boolean;
   addPatient: (patientData: AddFormValues) => Promise<void>;
   editPatient: (patientData: EditFormValues) => Promise<void>;
   addContactToPatient: (contactData: AddContactFormValues) => Promise<void>;
@@ -24,55 +22,56 @@ export const usePatients = (): UsePatients => {
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(
     null
   );
-  const [searchTerm, setSearchTerm] = useState('');
   const [patients, setPatients] = useState<Paitent[]>([]);
   const [patientDetails, setPatientDetails] = useState<PatientDetails | null>(
     null
   );
-  const [patientLoading, setPatientLoading] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [patientsLoading, setPatientsLoading] = useState(false);
 
   const getPatients = useCallback(async () => {
     const opts = {
       url: 'Patients/Get',
-      withCredentials: true,
+      method: 'GET',
     };
-    const { data } = await axiosInstance.request(opts);
-    setPatients(data);
+    try {
+      setPatientsLoading(true);
+      const { data } = await axiosInstance.request(opts);
+      setPatients(data);
+    } finally {
+      setPatientsLoading(false);
+    }
   }, []);
 
   const getPatientDetails = useCallback(async (id: number) => {
     try {
-      setPatientLoading(true);
+      setDetailsLoading(true);
       const opts = {
         url: `Patients/Get/${id}`,
-        withCredentials: true,
+        method: 'GET',
       };
       const { data } = await axiosInstance.request(opts);
       setPatientDetails(data);
     } finally {
-      setPatientLoading(false);
+      setDetailsLoading(false);
     }
   }, []);
 
-  const addPatient = useCallback(async (patientData: AddFormValues) => {
+  const addPatient = async (patientData: AddFormValues) => {
     const opts = {
       url: 'Patients/Create',
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      withCredentials: true,
       data: patientData,
     };
 
     const { data } = await axiosInstance.request(opts);
     setPatients((prevPatients) => [data, ...prevPatients]);
-  }, []);
+  };
 
-  const editPatient = useCallback(async (patientData: EditFormValues) => {
+  const editPatient = async (patientData: EditFormValues) => {
     const opts = {
       url: `Patients/Edit/${patientData.id}`,
       method: 'PUT',
-      headers: { 'content-type': 'application/json' },
-      withCredentials: true,
       data: patientData,
     };
 
@@ -99,29 +98,24 @@ export const usePatients = (): UsePatients => {
       }
       return next;
     });
-  }, []);
+  };
 
-  const addContactToPatient = useCallback(
-    async (contactData: AddContactFormValues) => {
-      const opts = {
-        url: `Patients/AddContact/${contactData.id}`,
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        withCredentials: true,
-        data: contactData,
+  const addContactToPatient = async (contactData: AddContactFormValues) => {
+    const opts = {
+      url: `Patients/AddContact/${contactData.id}`,
+      method: 'POST',
+      data: contactData,
+    };
+
+    const { data } = await axiosInstance.request(opts);
+    setPatientDetails((prevDetails) => {
+      if (!prevDetails) return null;
+      return {
+        ...prevDetails,
+        contacts: [data, ...(prevDetails.contacts || [])],
       };
-
-      const { data } = await axiosInstance.request(opts);
-      setPatientDetails((prevDetails) => {
-        if (!prevDetails) return null;
-        return {
-          ...prevDetails,
-          contacts: [data, ...(prevDetails.contacts || [])],
-        };
-      });
-    },
-    []
-  );
+    });
+  };
 
   useEffect(() => {
     getPatients();
@@ -135,23 +129,13 @@ export const usePatients = (): UsePatients => {
     }
   }, [selectedPatientId, getPatientDetails]);
 
-  const filteredPatients = useMemo(() => {
-    return patients.filter(
-      (patient) =>
-        patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        patient.surname.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [patients, searchTerm]);
-
   return {
     selectedPatientId,
     setSelectedPatientId,
-    searchTerm,
-    setSearchTerm,
     patients,
-    filteredPatients,
+    patientsLoading,
     patientDetails,
-    patientLoading,
+    detailsLoading,
     addPatient,
     editPatient,
     addContactToPatient,

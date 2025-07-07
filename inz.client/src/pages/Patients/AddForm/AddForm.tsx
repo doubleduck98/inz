@@ -20,6 +20,7 @@ import dayjs from 'dayjs';
 import { useAddFormContext } from './AddFormContext';
 import { randomId } from '@mantine/hooks';
 import AddFormSummary from './AddFormSummary';
+import { Provinces } from '../utils/FormUtils';
 
 interface AddFormProps {
   active: number;
@@ -169,27 +170,7 @@ const AddForm = ({ active, setActive }: AddFormProps) => {
                 searchable
                 nothingFoundMessage="Nie znaleziono.."
                 pointer={true}
-                data={[
-                  { value: 'Dolnośląskie', label: 'Dolnośląskie' },
-                  { value: 'Kujawsko-pomorskie', label: 'Kujawsko-pomorskie' },
-                  { value: 'Lubelskie', label: 'Lubelskie' },
-                  { value: 'Lubuskie', label: 'Lubuskie' },
-                  { value: 'Łódzkie', label: 'Łódzkie' },
-                  { value: 'Małopolskie', label: 'Małopolskie' },
-                  { value: 'Mazowieckie', label: 'Mazowieckie' },
-                  { value: 'Opolskie', label: 'Opolskie' },
-                  { value: 'Podkarpackie', label: 'Podkarpackie' },
-                  { value: 'Podlaskie', label: 'Podlaskie' },
-                  { value: 'Pomorskie', label: 'Pomorskie' },
-                  { value: 'Śląskie', label: 'Śląskie' },
-                  { value: 'Świętokrzyskie', label: 'Świętokrzyskie' },
-                  {
-                    value: 'Warmińsko-mazurskie',
-                    label: 'Warmińsko-mazurskie',
-                  },
-                  { value: 'Wielkopolskie', label: 'Wielkopolskie' },
-                  { value: 'Zachodniopomorskie', label: 'Zachodniopomorskie' },
-                ]}
+                data={Provinces}
                 {...form.getInputProps('province')}
               />
             </Grid.Col>

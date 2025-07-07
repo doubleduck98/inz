@@ -2,6 +2,7 @@ import { Button, Grid, Select, Stack, TextInput } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import dayjs from 'dayjs';
 import { useEditFormContext } from './EditFormContext';
+import { Provinces } from '../utils/FormUtils';
 
 const EditForm = () => {
   const form = useEditFormContext();
@@ -27,6 +28,12 @@ const EditForm = () => {
         required
         {...form.getInputProps('dob')}
         clearable
+      />
+      <TextInput
+        label="Ulica"
+        placeholder="Nazwa ulicy"
+        required
+        {...form.getInputProps('street')}
       />
       <Grid>
         <Grid.Col span={6}>
@@ -63,27 +70,7 @@ const EditForm = () => {
             searchable
             nothingFoundMessage="Nie znaleziono"
             pointer={true}
-            data={[
-              { value: 'Dolnośląskie', label: 'Dolnośląskie' },
-              { value: 'Kujawsko-pomorskie', label: 'Kujawsko-pomorskie' },
-              { value: 'Lubelskie', label: 'Lubelskie' },
-              { value: 'Lubuskie', label: 'Lubuskie' },
-              { value: 'Łódzkie', label: 'Łódzkie' },
-              { value: 'Małopolskie', label: 'Małopolskie' },
-              { value: 'Mazowieckie', label: 'Mazowieckie' },
-              { value: 'Opolskie', label: 'Opolskie' },
-              { value: 'Podkarpackie', label: 'Podkarpackie' },
-              { value: 'Podlaskie', label: 'Podlaskie' },
-              { value: 'Pomorskie', label: 'Pomorskie' },
-              { value: 'Śląskie', label: 'Śląskie' },
-              { value: 'Świętokrzyskie', label: 'Świętokrzyskie' },
-              {
-                value: 'Warmińsko-mazurskie',
-                label: 'Warmińsko-mazurskie',
-              },
-              { value: 'Wielkopolskie', label: 'Wielkopolskie' },
-              { value: 'Zachodniopomorskie', label: 'Zachodniopomorskie' },
-            ]}
+            data={Provinces}
             {...form.getInputProps('province')}
           />
         </Grid.Col>

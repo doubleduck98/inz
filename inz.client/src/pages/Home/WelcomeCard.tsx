@@ -1,7 +1,7 @@
 import { Paper, Text, Title } from '@mantine/core';
 import dayjs from 'dayjs';
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import classes from './Home.module.css';
 
 const WelcomeCard = () => {

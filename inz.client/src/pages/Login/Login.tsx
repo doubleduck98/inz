@@ -16,7 +16,7 @@ const Login = () => {
             Brak dostępu
           </Title>
           <Text size="xl" ta="center" c="dimmed">
-            Aby uzyskać dostęp do tej strony należy się zalogować.
+            Aby uzyskać dostęp do tej strony, należy się zalogować.
           </Text>
           <Button
             size="lg"

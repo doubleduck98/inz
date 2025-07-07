@@ -52,16 +52,26 @@ const PatientDetailsDisplay = ({
 
   return (
     <>
-      <Group justify="space-between" pt="sm" hiddenFrom="sm">
-        <Button color="gray" variant="subtle" p={8} onClick={onBack} mb="md">
+      <Group justify="space-between" pt="sm" mb="md" hiddenFrom="sm">
+        <Button
+          variant="subtle"
+          size="compact-md"
+          color="gray"
+          onClick={onBack}
+        >
           <IconArrowLeft />
         </Button>
-        <Button variant="subtle" p={8} color="gray" mb="md" onClick={onEdit}>
+        <Button
+          variant="subtle"
+          size="compact-md"
+          color="gray"
+          onClick={onEdit}
+        >
           <IconEdit />
         </Button>
       </Group>
       {patient && (
-        <Stack gap="sm" px="sm">
+        <Stack gap="sm" px={{ base: 0, sm: 'sm' }}>
           <Group justify="space-between">
             <Flex direction="column" align="flex-start" mb="lg">
               <Text fw={700} fz="xl" ta="center">
@@ -73,17 +83,11 @@ const PatientDetailsDisplay = ({
               </Text>
             </Flex>
             <Stack gap={0} visibleFrom="sm">
-              <Button color="gray" variant="subtle" p={8} onClick={onBack}>
+              <Button variant="subtle" size="md" color="gray" onClick={onBack}>
                 <IconX />
               </Button>
-              <Button
-                variant="subtle"
-                p={8}
-                color="gray"
-                mb="md"
-                onClick={onEdit}
-              >
-                <IconEdit> /</IconEdit>
+              <Button variant="subtle" size="md" color="gray" onClick={onEdit}>
+                <IconEdit />
               </Button>
             </Stack>
           </Group>

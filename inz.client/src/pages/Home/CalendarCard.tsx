@@ -12,7 +12,7 @@ import {
   UnstyledButton,
 } from '@mantine/core';
 import classes from './Home.module.css';
-import axiosInstance from '../../Axios';
+import axiosInstance from '@/utils/Axios';
 import { useMediaQuery } from '@mantine/hooks';
 
 interface Booking {

@@ -1,10 +1,10 @@
 export const validateContact = (
   errors: Record<string, string | null>,
   field: string,
-  contact: { name?: string; email: string | null; phone: string | null }
+  contact: { contactName?: string; email: string | null; phone: string | null }
 ) => {
-  if (field === 'contacts' && !contact.name)
-    errors[`${field}.name`] = 'Proszę podać nazwę kontaktu';
+  if (field.startsWith('contacts') && !contact.contactName)
+    errors[`${field}.contactName`] = 'Proszę podać nazwę kontaktu';
 
   if (!contact.email && !contact.phone) {
     const error = 'Proszę podać chociaż jedną formę kontaktu';
@@ -20,10 +20,9 @@ export const validateField = (
   errors: Record<string, string | null>,
   field: string,
   value: string,
-  errorMessage: string,
-  optional: boolean = false
+  errorMessage: string
 ) => {
-  if (!value && !optional) errors[field] = errorMessage;
+  if (!value) errors[field] = errorMessage;
   else if (value.length > 64) errors[field] = `Maksymalna liczba znaków to 64`;
   else errors[field] = null;
 };

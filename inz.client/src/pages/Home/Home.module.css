@@ -16,6 +16,7 @@
   text-align: center;
 
   @media (max-width: $mantine-breakpoint-sm) {
+    min-width: 100%;
     padding-bottom: 1em;
     min-height: fit-content;
     margin-top: var(--mantine-spacing-md);

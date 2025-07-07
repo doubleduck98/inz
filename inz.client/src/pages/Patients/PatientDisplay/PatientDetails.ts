@@ -1,7 +1,7 @@
 export interface PatientDetails {
   name: string;
   surname: string;
-  dob: Date;
+  dob: string;
   street: string;
   house: string;
   apartment: string | null;
