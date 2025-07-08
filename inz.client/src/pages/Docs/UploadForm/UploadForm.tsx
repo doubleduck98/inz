@@ -1,36 +1,41 @@
-import { Button, FileInput, Stack, TextInput } from '@mantine/core';
+import { FileInput, Stack, Textarea } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { IconFileUpload } from '@tabler/icons-react';
 import DocDropzone from './DocDropzone';
 import { FileWithPath } from '@mantine/dropzone';
-import PatientSelect from '../components/PatientSelect';
+import PatientSelect from '@/components/PatientSelect';
 import { useUploadFormContext } from './UploadFormContext';
-import { Paitent } from '../../../types/Patient';
+import UploadButton from './UploadButton';
+import { UploadStatus } from '../types/UploadStatus';
 
 interface UploadFormProps {
-  onFileChange: (f: File | null) => void;
-  patientsSelect: Paitent[];
-  patientsLoading: boolean;
-  onSearchChange: (s: string) => void;
+  uploadStatus: UploadStatus;
+  uploadProgress: number;
 }
 
-const UploadForm = ({
-  onFileChange,
-  patientsSelect,
-  patientsLoading,
-  onSearchChange,
-}: UploadFormProps) => {
+const UploadForm = ({ uploadStatus, uploadProgress }: UploadFormProps) => {
   const form = useUploadFormContext();
   const isMobile = useMediaQuery('(max-width: 768px)');
+
+  const onFileChange = (file: File | null) => {
+    if (file) form.setValues({ fileName: file.name, file: file });
+    else form.setValues({ file: file });
+  };
+
   return (
     <Stack>
       <PatientSelect
-        patients={patientsSelect}
-        loading={patientsLoading}
-        onSearchChange={onSearchChange}
-        form={form}
+        defaultValue={form.getValues().patientName}
+        errorProps={form.getInputProps('patientId').error}
+        setPatientValue={(value) => form.setFieldValue('patientName', value)}
+        setPatientIdValue={(value) => form.setFieldValue('patientId', value)}
       />
-      <TextInput label="Nazwa dokumentu:" {...form.getInputProps('fileName')} />
+      <Textarea
+        label="Nazwa dokumentu:"
+        autosize
+        maxRows={4}
+        {...form.getInputProps('fileName')}
+      />
       <FileInput
         leftSection={<IconFileUpload />}
         label="Dokument:"
@@ -48,9 +53,11 @@ const UploadForm = ({
         />
       )}
 
-      <Button type="submit" disabled={!form.getValues().file}>
-        Prześlij plik
-      </Button>
+      <UploadButton
+        uploadStatus={uploadStatus}
+        uploadProgress={uploadProgress}
+        disabled={!form.getValues().file}
+      />
     </Stack>
   );
 };

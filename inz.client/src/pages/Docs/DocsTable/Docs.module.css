@@ -19,3 +19,38 @@
   height: 21px;
   border-radius: 21px;
 }
+
+.docsGrid {
+  display: flex;
+  gap: var(--mantine-spacing-md);
+}
+
+.docsColumn {
+  flex-grow: 1;
+  flex-shrink: 1;
+  @media (min-width: $mantine-breakpoint-sm) {
+    min-width: 420px;
+  }
+}
+
+.sideColumn {
+  flex-shrink: 2;
+  flex-basis: 180px;
+  min-width: 120px;
+}
+
+.tableThead {
+  position: sticky;
+  top: 0;
+  background-color: var(--mantine-color-body);
+  transition: box-shadow 150ms ease;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-bottom: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-3));
+  }
+}

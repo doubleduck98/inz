@@ -1,5 +1,4 @@
-import { Button, Text, SimpleGrid } from '@mantine/core';
-import { modals } from '@mantine/modals';
+import { Button, SimpleGrid } from '@mantine/core';
 import {
   IconCloudUpload,
   IconCloudDownload,
@@ -7,10 +6,10 @@ import {
 } from '@tabler/icons-react';
 import { pliki } from '../utils/TableUtils';
 import { useMediaQuery } from '@mantine/hooks';
+import { openConfirmDeleteModal } from '@/components/Modals';
 
 interface TableButtonsProps {
-  openModal: () => void;
-  openDrawer?: () => void;
+  openDialog: () => void;
   selection: number[];
   onDownloadSelection: () => void;
   onDeleteSelection: () => void;
@@ -18,23 +17,16 @@ interface TableButtonsProps {
 
 const TableButtons = ({
   selection,
-  openModal,
-  openDrawer,
+  openDialog,
   onDownloadSelection,
   onDeleteSelection,
 }: TableButtonsProps) => {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const handleDeleteSelection = () => {
-    modals.openConfirmModal({
+    openConfirmDeleteModal({
       title: 'Potwierdź usunięcie',
-      children: (
-        <Text size="sm">
-          Czy chcesz usunąć {selection.length} {pliki(selection.length)}?
-        </Text>
-      ),
-      labels: { confirm: 'Usuń', cancel: 'Anuluj' },
-      confirmProps: { color: 'red' },
-      onConfirm: () => onDeleteSelection(),
+      message: `Czy chcesz usunąć ${selection.length} ${pliki(selection.length)}?`,
+      onConfirm: onDeleteSelection,
     });
   };
 
@@ -44,7 +36,7 @@ const TableButtons = ({
         leftSection={isMobile ? undefined : <IconCloudUpload />}
         rightSection={isMobile ? undefined : <span />}
         variant="gradient"
-        onClick={isMobile ? openDrawer : openModal}
+        onClick={openDialog}
         justify={isMobile ? 'center' : 'space-between'}
       >
         Prześlij

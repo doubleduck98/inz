@@ -11,6 +11,7 @@ interface TableHeaderButtonProps {
   reversed: boolean;
   sorted: boolean;
   onSort: () => void;
+  width?: string | number;
 }
 
 const TableHeaderButton = ({
@@ -18,6 +19,7 @@ const TableHeaderButton = ({
   reversed,
   sorted,
   onSort,
+  width,
 }: TableHeaderButtonProps) => {
   const Icon = sorted
     ? reversed
@@ -25,7 +27,7 @@ const TableHeaderButton = ({
       : IconChevronDown
     : IconSelector;
   return (
-    <Table.Th className={classes.th}>
+    <Table.Th w={width} className={classes.th}>
       <UnstyledButton onClick={onSort} className={classes.control}>
         <Group justify="space-between" wrap="nowrap">
           <Text fw={500} fz="sm">

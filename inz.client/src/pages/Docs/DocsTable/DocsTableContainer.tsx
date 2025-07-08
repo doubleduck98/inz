@@ -1,26 +1,30 @@
-import { useCallback } from 'react';
 import useDocsTable from '../hooks/useDocsTable';
 import TableButtons from './TableButtons';
 import { Container, Box, Grid, TextInput, CloseButton } from '@mantine/core';
 import { IconSearch } from '@tabler/icons-react';
 import DocsTable from './DocsTable';
-import { Doc } from '../../../types/Doc';
+import { Doc } from '@/types/Doc';
+import classes from './Docs.module.css';
 
 interface DocsTableContainerProps {
   docs: Doc[];
+  loading: boolean;
   onDelete: (id: number) => Promise<void>;
-  onEdit: (id: number) => void;
+  onEdit: (doc: Doc) => void;
+  onDownload: (id: number) => void;
+  onDownloadSelection: (ids: number[]) => void;
   openUploadDialog: () => void;
-  onDownloadSelection: (ids: number[]) => Promise<void>;
-  onDeleteSelection: (ids: number[]) => Promise<void>;
+  onDeleteSelection: (ids: number[]) => void;
 }
 
 const DocsTableContainer = ({
   docs,
+  loading,
   onDelete,
   onEdit,
-  openUploadDialog,
+  onDownload,
   onDownloadSelection,
+  openUploadDialog,
   onDeleteSelection,
 }: DocsTableContainerProps) => {
   const {
@@ -37,33 +41,37 @@ const DocsTableContainer = ({
     clearSelection,
   } = useDocsTable({ docs: docs });
 
-  const handleDownloadSelection = useCallback(async () => {
-    await onDownloadSelection(selection);
-  }, [selection, onDownloadSelection]);
-
-  const handleDeleteSelection = useCallback(async () => {
-    await onDeleteSelection(selection);
+  const handleDeleteSelection = () => {
+    onDeleteSelection(selection);
     clearSelection();
-  }, [selection, onDeleteSelection, clearSelection]);
+  };
+
+  const handleDownloadSelection = () => {
+    onDownloadSelection(selection);
+    clearSelection();
+  };
 
   const tableButtons = (
     <TableButtons
       selection={selection}
-      openModal={openUploadDialog}
-      openDrawer={openUploadDialog}
-      onDownloadSelection={handleDownloadSelection}
+      openDialog={openUploadDialog}
       onDeleteSelection={handleDeleteSelection}
+      onDownloadSelection={handleDownloadSelection}
     />
   );
 
   return (
-    <Container fluid>
+    <Container fluid maw={1300}>
       <Box hiddenFrom="sm" my={12}>
         {tableButtons}
       </Box>
 
-      <Grid overflow="hidden">
-        <Grid.Col span="auto" order={{ base: 2, sm: 1 }}>
+      <Grid overflow="hidden" className={classes.docsGrid}>
+        <Grid.Col
+          span="auto"
+          order={{ base: 2, sm: 1 }}
+          className={classes.docsColumn}
+        >
           <TextInput
             placeholder="Wyszukaj po dowolnym polu"
             mb="md"
@@ -80,6 +88,7 @@ const DocsTableContainer = ({
           />
           <DocsTable
             docs={docs}
+            loading={loading}
             sortedData={sortedData}
             selection={selection}
             toggleRow={toggleRow}
@@ -87,15 +96,15 @@ const DocsTableContainer = ({
             sortBy={sortBy}
             reverseSortDirection={reverseSortDirection}
             setSorting={setSorting}
+            onDownload={onDownload}
             onDelete={onDelete}
             onEdit={onEdit}
           />
         </Grid.Col>
         <Grid.Col
-          span={{ base: 12, sm: 'content' }}
-          miw={150}
           order={{ base: 1, sm: 2 }}
           visibleFrom="sm"
+          className={classes.sideColumn}
         >
           {tableButtons}
         </Grid.Col>

@@ -1,7 +1,8 @@
 import { Table, Checkbox, Text } from '@mantine/core';
-import { Doc } from '../../../types/Doc';
+import { Doc } from '@/types/Doc';
 import TableHeaderButton from './TableHeaderButton';
 import { useMediaQuery } from '@mantine/hooks';
+import classes from './Docs.module.css';
 
 interface TableHeaderProps {
   docs: Doc[];
@@ -23,9 +24,9 @@ const TableHeader = ({
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   return (
-    <Table.Thead>
+    <Table.Thead className={classes.tableThead}>
       <Table.Tr>
-        <Table.Th w={{ base: '30px', sm: '60px' }} px={{ base: '0', sm: 'sm' }}>
+        <Table.Th w={{ base: '28px', sm: '40px' }} px={{ base: '0', sm: 'sm' }}>
           <Checkbox
             onChange={toggleAll}
             checked={selection.length === docs.length && docs.length > 0}
@@ -35,31 +36,34 @@ const TableHeader = ({
           />
         </Table.Th>
         {isMobile ? (
-          <TableHeaderButton
-            sorted={sortBy === 'fileName'}
-            reversed={reverseSortDirection}
-            onSort={() => setSorting('fileName')}
-          >
-            Dokument
-          </TableHeaderButton>
+          <>
+            <TableHeaderButton
+              sorted={sortBy === 'fileName'}
+              reversed={reverseSortDirection}
+              onSort={() => setSorting('fileName')}
+              width="auto"
+            >
+              Dokument
+            </TableHeaderButton>
+          </>
         ) : (
           <>
             <TableHeaderButton
               sorted={sortBy === 'fileName'}
               reversed={reverseSortDirection}
               onSort={() => setSorting('fileName')}
+              width={'50%'}
             >
               Nazwa
             </TableHeaderButton>
-            <Table.Th w="220px">
-              <TableHeaderButton
-                sorted={sortBy === 'patientName'}
-                reversed={reverseSortDirection}
-                onSort={() => setSorting('patientName')}
-              >
-                Pacjent
-              </TableHeaderButton>
-            </Table.Th>
+            <TableHeaderButton
+              sorted={sortBy === 'patientName'}
+              reversed={reverseSortDirection}
+              onSort={() => setSorting('patientName')}
+              width={'30%'}
+            >
+              Pacjent
+            </TableHeaderButton>
           </>
         )}
 

@@ -1,5 +1,6 @@
+import { openConfirmDeleteModal } from '@/components/Modals';
+import { Doc } from '@/types/Doc';
 import { ActionIcon, Group, Menu, MenuItem, Text } from '@mantine/core';
-import { modals } from '@mantine/modals';
 import {
   IconDots,
   IconDownload,
@@ -8,44 +9,37 @@ import {
 } from '@tabler/icons-react';
 
 interface TableRowButtonsProps {
-  id: number;
-  fileName: string;
+  doc: Doc;
+  onDownload: (id: number) => void;
   onDelete: (id: number) => void;
-  onEdit: (id: number, mobile: boolean) => void;
+  onEdit: (doc: Doc) => void;
 }
 
 const TableRowButtons = ({
-  id,
-  fileName,
+  doc,
+  onDownload,
   onDelete,
   onEdit,
 }: TableRowButtonsProps) => {
-  const handleDownload = () => {
-    try {
-      window.location.href = `Resources/Download/${id}`;
-    } catch (e) {
-      console.log(e);
-    }
-  };
-
   const handleDelete = (id: number) => {
-    modals.openConfirmModal({
+    openConfirmDeleteModal({
       title: 'Potwierdź usunięcie',
-      children: (
-        <Text size="sm">
-          Czy chcesz usunąć{' '}
-          {fileName.length > 40 ? fileName.substring(0, 40) + '..' : fileName}?
-        </Text>
-      ),
-      labels: { confirm: 'Usuń', cancel: 'Anuluj' },
-      confirmProps: { color: 'red' },
+      message: `Czy chcesz usunąć ${
+        doc.fileName.length > 40
+          ? doc.fileName.substring(0, 40) + '..'
+          : doc.fileName
+      }?`,
       onConfirm: () => onDelete(id),
     });
   };
 
   return (
     <>
-      <Menu withArrow transitionProps={{ transition: 'pop' }}>
+      <Menu
+        withArrow
+        position="bottom-end"
+        transitionProps={{ transition: 'pop' }}
+      >
         <Menu.Target>
           <ActionIcon variant="subtle" color="gray" hiddenFrom="sm">
             <IconDots size={16} stroke={1.5} />
@@ -54,7 +48,7 @@ const TableRowButtons = ({
         <Menu.Dropdown>
           <MenuItem
             leftSection={<IconDownload size={16} />}
-            onClick={handleDownload}
+            onClick={() => onDownload(doc.id)}
           >
             <Text fz="sm" pt="3px">
               Pobierz
@@ -62,7 +56,7 @@ const TableRowButtons = ({
           </MenuItem>
           <MenuItem
             leftSection={<IconEdit size={16} />}
-            onClick={() => onEdit(id, true)}
+            onClick={() => onEdit(doc)}
           >
             <Text fz="sm" pt="3px">
               Edytuj
@@ -71,7 +65,7 @@ const TableRowButtons = ({
           <MenuItem
             leftSection={<IconTrash size={16} />}
             color="red"
-            onClick={() => handleDelete(id)}
+            onClick={() => handleDelete(doc.id)}
           >
             <Text fz="sm" pt="3px" c="red">
               Usuń
@@ -81,20 +75,20 @@ const TableRowButtons = ({
       </Menu>
 
       <Group visibleFrom="sm" gap={3}>
-        <ActionIcon variant="subtle" color="gray" onClick={handleDownload}>
-          <IconDownload size={21} />
-        </ActionIcon>
         <ActionIcon
           variant="subtle"
           color="gray"
-          onClick={() => onEdit(id, false)}
+          onClick={() => onDownload(doc.id)}
         >
+          <IconDownload size={21} />
+        </ActionIcon>
+        <ActionIcon variant="subtle" color="gray" onClick={() => onEdit(doc)}>
           <IconEdit size={21} />
         </ActionIcon>
         <ActionIcon
           variant="subtle"
           color="red"
-          onClick={() => handleDelete(id)}
+          onClick={() => handleDelete(doc.id)}
         >
           <IconTrash size={21} />
         </ActionIcon>

@@ -6,25 +6,27 @@ import {
 } from './UploadForm/UploadFormContext';
 import { EditFormProvider, useEditForm } from './EditForm/EditFormContext';
 import EditForm from './EditForm/EditForm';
-import ResponsiveDialog from '../../ResponsiveDialog';
+import ResponsiveDialog from '@/components/ResponsiveDialog';
 import useDocuments from './hooks/useDocuments';
-import usePatients from './hooks/usePatients';
 import DocsTableContainer from './DocsTable/DocsTableContainer';
 import { stripExtension } from './utils/DocsUtils';
 import { AxiosError } from 'axios';
-import { ApiError } from '../../types/ApiError';
+import { ApiError } from '@/types/ApiError';
+import { Doc } from '@/types/Doc';
 
 const Docs = () => {
   const {
     docs,
+    loading,
     uploadDocument,
+    uploadStatus,
+    uploadProgress,
+    downloadDocument,
     downloadDocuments,
     editDocument,
     deleteDocument,
     deleteSelectedDocuments,
   } = useDocuments();
-
-  const { patients, setSearchPatients, loadingPatients } = usePatients();
 
   const [
     uploadDialogOpened,
@@ -34,9 +36,9 @@ const Docs = () => {
     useDisclosure(false);
 
   const form = useUploadForm({
-    mode: 'uncontrolled',
     initialValues: {
-      patientId: '',
+      patientName: '',
+      patientId: null,
       file: null,
       fileName: '',
     },
@@ -56,7 +58,7 @@ const Docs = () => {
     initialValues: {
       fileId: 0,
       fileName: '',
-      patientId: '',
+      patientId: null,
       patientName: '',
     },
 
@@ -70,22 +72,20 @@ const Docs = () => {
     },
   });
 
-  const onFileChange = (file: File | null) => {
-    if (file) form.setValues({ fileName: file.name, file: file });
-    else form.setValues({ file: file });
-  };
-
   const handleUpload = async () => {
     const formData = new FormData();
     const file: unknown = form.values.file;
     formData.append('file', file as File);
     formData.append('fileName', form.values.fileName);
-    formData.append('patientId', form.values.patientId);
+    formData.append('patientId', form.values.patientId!.toString());
 
     try {
       await uploadDocument(formData);
-      form.reset();
-      closeUploadDialog();
+      // wait a bit for success message display
+      setTimeout(() => {
+        form.reset();
+        closeUploadDialog();
+      }, 500);
     } catch (e) {
       if (e instanceof AxiosError && e.response?.data) {
         const error = e.response.data as ApiError;
@@ -99,21 +99,25 @@ const Docs = () => {
     }
   };
 
-  const handleEditClick = (id: number) => {
-    const doc = docs.find((d) => d.id === id);
+  const handleEditClick = (doc: Doc) => {
     editForm.setValues({
-      fileId: doc?.id,
+      fileId: doc.id,
       fileName: stripExtension(doc?.fileName),
-      patientId: '',
+      patientId: doc?.patientId,
       patientName: doc?.patientName,
     });
+    editForm.resetDirty();
     openEditDialog();
   };
 
   const handleEditSubmit = async () => {
     const { fileId, fileName, patientId } = editForm.getValues();
+    const data = {
+      fileName: fileName,
+      patientId: patientId!,
+    };
     try {
-      await editDocument(fileId, { fileName, patientId });
+      await editDocument(fileId, data);
       editForm.reset();
       closeEditDialog();
     } catch (e) {
@@ -126,27 +130,27 @@ const Docs = () => {
     }
   };
 
-  const handleDownloadSelection = async (ids: number[]) => {
-    await downloadDocuments(ids);
-  };
+  const handleDelete = async (id: number) => await deleteDocument(id);
 
-  const handleDelete = async (id: number) => {
-    await deleteDocument(id);
-  };
-
-  const handleDeleteSelection = async (ids: number[]) => {
+  const handleDeleteSelection = async (ids: number[]) =>
     await deleteSelectedDocuments(ids);
-  };
+
+  const handleDownload = async (id: number) => await downloadDocument(id);
+
+  const handleDownloadSelection = async (ids: number[]) =>
+    await downloadDocuments(ids);
 
   return (
     <>
       <DocsTableContainer
         docs={docs}
-        onDelete={handleDelete}
-        onEdit={handleEditClick}
+        loading={loading}
         openUploadDialog={openUploadDialog}
-        onDownloadSelection={handleDownloadSelection}
+        onEdit={handleEditClick}
+        onDelete={handleDelete}
         onDeleteSelection={handleDeleteSelection}
+        onDownload={handleDownload}
+        onDownloadSelection={handleDownloadSelection}
       />
 
       <ResponsiveDialog
@@ -157,12 +161,8 @@ const Docs = () => {
         <UploadFormProvider form={form}>
           <form onSubmit={form.onSubmit(handleUpload)}>
             <UploadForm
-              onFileChange={onFileChange}
-              patientsSelect={patients}
-              patientsLoading={loadingPatients}
-              onSearchChange={(val) => {
-                setSearchPatients(val);
-              }}
+              uploadStatus={uploadStatus}
+              uploadProgress={uploadProgress}
             />
           </form>
         </UploadFormProvider>
@@ -175,13 +175,7 @@ const Docs = () => {
       >
         <EditFormProvider form={editForm}>
           <form onSubmit={editForm.onSubmit(handleEditSubmit)}>
-            <EditForm
-              patientsSelect={patients}
-              patientsLoading={loadingPatients}
-              onSearchChange={(val) => {
-                setSearchPatients(val);
-              }}
-            />
+            <EditForm />
           </form>
         </EditFormProvider>
       </ResponsiveDialog>

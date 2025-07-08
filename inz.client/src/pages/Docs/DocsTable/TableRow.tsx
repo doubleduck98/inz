@@ -1,5 +1,5 @@
 import { Box, Checkbox, Group, Stack, Table, Text } from '@mantine/core';
-import { Doc } from '../../../types/Doc';
+import { Doc } from '@/types/Doc';
 import {
   IconFileTypePdf,
   IconFileText,
@@ -8,35 +8,38 @@ import {
   IconFileTypeDocx,
 } from '@tabler/icons-react';
 import TableRowButtons from './TableRowButtons';
+import { useMediaQuery } from '@mantine/hooks';
+import React from 'react';
 
 interface TableRowProps {
   doc: Doc;
   selected: boolean;
   onToggle: () => void;
+  onDownload: (id: number) => void;
   onDelete: (id: number) => void;
-  onEdit: (id: number, mobile: boolean) => void;
+  onEdit: (doc: Doc) => void;
 }
+
+const fileIcons: { [key: string]: React.ReactNode } = {
+  pdf: <IconFileTypePdf size={26} radius={26} />,
+  doc: <IconFileTypeDoc size={26} radius={26} />,
+  docx: <IconFileTypeDocx size={26} radius={26} />,
+  txt: <IconFileTypeTxt size={26} radius={26} />,
+};
 
 const TableRow = ({
   doc,
   selected,
   onToggle,
+  onDownload,
   onDelete,
   onEdit,
 }: TableRowProps) => {
-  const ExToIcon = (fileName: string) => {
-    switch (fileName.split('.').pop()) {
-      case 'pdf':
-        return <IconFileTypePdf size={26} radius={26} />;
-      case 'doc':
-        return <IconFileTypeDoc size={26} radius={26} />;
-      case 'docx':
-        return <IconFileTypeDocx size={26} radius={26} />;
-      case 'txt':
-        return <IconFileTypeTxt size={26} radius={26} />;
-      default:
-        return <IconFileText size={26} radius={26} />;
-    }
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const exToIcon = (fileName: string) => {
+    const ex = fileName.split('.').pop();
+    const icon = fileIcons[ex!];
+    return icon || <IconFileText size={26} radius={26} />;
   };
 
   return (
@@ -45,47 +48,43 @@ const TableRow = ({
         <Checkbox checked={selected} onChange={onToggle} />
       </Table.Td>
 
-      <Table.Td hiddenFrom="sm">
-        <Group wrap="nowrap" gap="xs">
-          <Box miw={26} maw={26} visibleFrom="sm">
-            {ExToIcon(doc.fileName)}
-          </Box>
-          <Stack gap={0} style={{ overflow: 'hidden', flexGrow: 1 }}>
+      {isMobile && (
+        <Table.Td>
+          <Stack gap={0}>
             <Text fw={500} lineClamp={2} fz="sm">
               {doc.fileName}
             </Text>
-            <Text c="dimmed" lineClamp={2} fz="xs">
+            <Text c="dimmed" fz="xs">
               {doc.patientName}
             </Text>
           </Stack>
-        </Group>
-      </Table.Td>
+        </Table.Td>
+      )}
 
-      <Table.Td visibleFrom="sm">
-        <Group wrap="nowrap" gap="sm" align="center">
-          <Box miw={26} maw={26} pt="8px">
-            {ExToIcon(doc.fileName)}
-          </Box>
-          <Text
-            fw={500}
-            fz="md"
-            lineClamp={2}
-            style={{ flexGrow: 1, overflow: 'hidden' }}
-          >
-            {doc.fileName}
-          </Text>
-        </Group>
-      </Table.Td>
-      <Table.Td visibleFrom="sm">
-        <Text lineClamp={2} fz="md">
-          {doc.patientName}
-        </Text>
-      </Table.Td>
+      {!isMobile && (
+        <>
+          <Table.Td>
+            <Group wrap="nowrap" gap="sm" align="center">
+              <Box miw={26} maw={26} pt="8px">
+                {exToIcon(doc.fileName)}
+              </Box>
+              <Text fw={500} fz="md" lineClamp={2}>
+                {doc.fileName}
+              </Text>
+            </Group>
+          </Table.Td>
+          <Table.Td>
+            <Text lineClamp={2} fz="md">
+              {doc.patientName}
+            </Text>
+          </Table.Td>
+        </>
+      )}
 
       <Table.Td p={{ base: 'xs', sm: 'sm' }}>
         <TableRowButtons
-          id={doc.id}
-          fileName={doc.fileName}
+          doc={doc}
+          onDownload={onDownload}
           onDelete={onDelete}
           onEdit={onEdit}
         />

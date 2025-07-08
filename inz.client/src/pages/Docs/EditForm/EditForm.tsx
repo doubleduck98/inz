@@ -1,30 +1,26 @@
-import { Button, Stack, TextInput } from '@mantine/core';
-import PatientSelect from '../components/PatientSelect';
-import { Paitent } from '../../../types/Patient';
+import { Button, Stack, Textarea } from '@mantine/core';
+import PatientSelect from '@/components/PatientSelect';
 import { useEditFormContext } from './EditFormContext';
 
-interface EditFormProps {
-  patientsSelect: Paitent[];
-  patientsLoading: boolean;
-  onSearchChange: (s: string) => void;
-}
-
-const EditForm = ({
-  patientsSelect,
-  patientsLoading,
-  onSearchChange,
-}: EditFormProps) => {
+const EditForm = () => {
   const form = useEditFormContext();
   return (
     <Stack>
       <PatientSelect
-        patients={patientsSelect}
-        loading={patientsLoading}
-        onSearchChange={onSearchChange}
-        form={form}
+        defaultValue={form.getValues().patientName || ''}
+        errorProps={form.getInputProps('patientId').error}
+        setPatientValue={(value) => form.setFieldValue('patient', value)}
+        setPatientIdValue={(value) => form.setFieldValue('patientId', value)}
       />
-      <TextInput label="Nazwa dokumentu:" {...form.getInputProps('fileName')} />
-      <Button type="submit">Zaktualizuj</Button>
+      <Textarea
+        label="Nazwa dokumentu:"
+        autosize
+        maxRows={4}
+        {...form.getInputProps('fileName')}
+      />
+      <Button type="submit" disabled={!form.isDirty()}>
+        Zaktualizuj
+      </Button>
     </Stack>
   );
 };

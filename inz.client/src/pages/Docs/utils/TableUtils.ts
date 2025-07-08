@@ -1,4 +1,4 @@
-import { Doc } from '../../../types/Doc';
+import { Doc } from '@/types/Doc';
 
 export const sortData = (
   data: Doc[],

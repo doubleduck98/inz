@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Doc } from '../../../types/Doc';
+import { Doc } from '@/types/Doc';
 import { sortData } from '../utils/TableUtils';
 
 interface useDocsTableProps {
@@ -59,7 +59,7 @@ const useDocsTable = ({
   };
 
   useEffect(() => {
-    clearSelection();
+    setSelection([]);
   }, []);
 
   return {

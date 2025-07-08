@@ -1,10 +1,12 @@
 import { ScrollArea, Table } from '@mantine/core';
-import { Doc } from '../../../types/Doc';
+import { Doc } from '@/types/Doc';
 import TableRow from './TableRow';
 import TableHeader from './TableHeader';
+import TableSkeleton from './DocsTableSkeleton';
 
 interface DocsTableProps {
   docs: Doc[];
+  loading: boolean;
   sortedData: Doc[];
   selection: number[];
   toggleRow: (id: number) => void;
@@ -12,12 +14,14 @@ interface DocsTableProps {
   sortBy: keyof Doc | null;
   reverseSortDirection: boolean;
   setSorting: (field: keyof Doc) => void;
+  onDownload: (id: number) => void;
   onDelete: (id: number) => void;
-  onEdit: (id: number, mobile: boolean) => void;
+  onEdit: (doc: Doc) => void;
 }
 
 const DocsTable = ({
   docs,
+  loading,
   sortedData,
   selection,
   toggleRow,
@@ -25,6 +29,7 @@ const DocsTable = ({
   sortBy,
   reverseSortDirection,
   setSorting,
+  onDownload,
   onDelete,
   onEdit,
 }: DocsTableProps) => {
@@ -34,14 +39,15 @@ const DocsTable = ({
       doc={doc}
       selected={selection.includes(doc.id)}
       onToggle={() => toggleRow(doc.id)}
+      onDownload={onDownload}
       onDelete={onDelete}
       onEdit={onEdit}
     />
   ));
 
   return (
-    <ScrollArea>
-      <Table verticalSpacing="sm" miw={{ base: 280, sm: 700 }} layout="fixed">
+    <ScrollArea.Autosize mah={'85vh'} offsetScrollbars>
+      <Table verticalSpacing="sm" layout="fixed">
         <TableHeader
           docs={docs}
           selection={selection}
@@ -51,7 +57,9 @@ const DocsTable = ({
           setSorting={setSorting}
         />
         <Table.Tbody>
-          {sortedDocs.length > 0 ? (
+          {loading ? (
+            <TableSkeleton />
+          ) : sortedDocs.length > 0 ? (
             sortedDocs
           ) : (
             <Table.Tr>
@@ -62,7 +70,7 @@ const DocsTable = ({
           )}
         </Table.Tbody>
       </Table>
-    </ScrollArea>
+    </ScrollArea.Autosize>
   );
 };
 
