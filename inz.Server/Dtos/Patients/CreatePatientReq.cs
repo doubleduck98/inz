@@ -6,7 +6,7 @@ namespace inz.Server.Dtos.Patients;
 public record CreatePatientReq(
     [Required] [Length(1, 64)] string Name,
     [Required] [Length(1, 64)] string Surname,
-    [Required] DateTime Dob,
+    [Required] DateOnly Dob,
     [Required] [Length(1, 64)] string Street,
     [Required] [Length(1, 64)] string House,
     string? Apartment,

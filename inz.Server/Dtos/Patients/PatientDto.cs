@@ -1,3 +1,3 @@
 namespace inz.Server.Dtos.Patients;
 
-public record PatientDto(int Id, string Name, string Surname, DateTime Dob);
+public record PatientDto(int Id, string Name, string Surname, DateOnly Dob);

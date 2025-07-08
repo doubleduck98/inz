@@ -6,7 +6,7 @@ public record PatientDetailDto(
     int Id,
     string Name,
     string Surname,
-    DateTime Dob,
+    DateOnly Dob,
     string Street,
     string House,
     string? Apartment,

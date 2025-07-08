@@ -8,7 +8,7 @@ public class Patient
     public int Id { get; set; }
     public required string Name { get; set; }
     public required string Surname { get; set; }
-    public required DateTime Dob { get; set; }
+    public required DateOnly Dob { get; set; }
     public string? CoordinatingUserId { get; set; }
 
     public string? Email { get; set; }

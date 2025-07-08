@@ -1,10 +1,8 @@
 using inz.Server.Dtos.Patients;
 using inz.Server.Services;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 
 namespace inz.Server.Controllers;
@@ -12,24 +10,14 @@ namespace inz.Server.Controllers;
 [ApiController]
 [Route("[controller]/[action]")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class PatientsController : ControllerBase
+public class PatientsController : ApiBaseController
 {
     private readonly IPatientsService _patients;
-    private readonly IHttpContextAccessor _contextAccessor;
 
-    private string UserId => _contextAccessor.HttpContext?.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ??
-                             throw new AuthenticationFailureException("User id claim not found");
-
-    public PatientsController(
-        [FromServices] IPatientsService patientsService,
-        [FromServices] IHttpContextAccessor contextAccessor)
+    public PatientsController([FromServices] IPatientsService patientsService)
     {
         _patients = patientsService;
-        _contextAccessor = contextAccessor;
     }
-
-    private ObjectResult ProblemResponse(Result result) =>
-        Problem(result.Error!.Message, type: result.Error.Type, statusCode: result.Error.Code);
 
     [HttpGet]
     public async Task<IActionResult> Get([FromQuery] string? search)

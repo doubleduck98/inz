@@ -27,6 +27,7 @@ public class PatientsService : IPatientsService
     public async Task<List<PatientDto>> GetPatients(string userId)
     {
         return await _db.Patients.Where(p => p.CoordinatingUserId == userId)
+            .OrderBy(p=>p.Surname)
             .Select(p => new PatientDto(p.Id, p.Name, p.Surname, p.Dob)).ToListAsync();
     }
 
@@ -35,9 +36,9 @@ public class PatientsService : IPatientsService
         var patterns = search.Split(' ', '-').Select(s => $"{s}%");
         return await _db.Patients.Where(p =>
                 p.CoordinatingUserId == userId &&
-                patterns.All(oattern =>
-                    EF.Functions.ILike(p.Name, oattern) ||
-                    EF.Functions.ILike(p.Surname, oattern)))
+                patterns.All(pattern =>
+                    EF.Functions.ILike(p.Name, pattern) ||
+                    EF.Functions.ILike(p.Surname, pattern)))
             .Select(p => new PatientDto(p.Id, p.Name, p.Surname, p.Dob)).ToListAsync();
     }
 
@@ -75,7 +76,7 @@ public class PatientsService : IPatientsService
         }
 
         await _db.Patients.AddAsync(newPatient);
-        // await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
         return new PatientDto(newPatient.Id, newPatient.Name, newPatient.Surname, newPatient.Dob);
     }
 

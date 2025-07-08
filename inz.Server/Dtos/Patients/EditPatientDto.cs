@@ -6,7 +6,7 @@ public record EditPatientDto(
     int Id,
     string Name,
     string Surname,
-    DateTime Dob,
+    DateOnly Dob,
     string Street,
     string House,
     string? Apartment,
