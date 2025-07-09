@@ -2,9 +2,9 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, ReactNode, useContext, useEffect } from 'react';
 import { useState } from 'react';
-import { User } from '../types/User';
+import { User } from '@/types/User';
 import axios, { AxiosError } from 'axios';
-import { UNAUTHORIZED } from '../utils/Events';
+import { UNAUTHORIZED } from '@/utils/Events';
 import { RefreshResponse } from '@/types/RefreshResponse';
 
 interface AuthContextType {

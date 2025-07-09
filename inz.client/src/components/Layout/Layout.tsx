@@ -7,9 +7,11 @@ import {
 } from '@tabler/icons-react';
 import { AppShell, Burger, Group } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import classes from './Layout.module.css';
 import { useAuth } from '@/hooks/useAuth';
+import ColorSchemeButton from './ColorSchemeButton/ColorSchemeButton';
+import AccesibilityMenu from './A11yMenu/A11yMenu';
 
 const linkData = [
   { link: '/', label: 'Strona główna', icon: IconHome },
@@ -73,10 +75,9 @@ function Layout() {
                 />
               </div>
             </Group>
-            <Group>
-              <NavLink to={'/login'}>login</NavLink>
-              <NavLink to={'/'}>home</NavLink>
-              <NavLink to={'/test'}>test</NavLink>
+            <Group gap="sm">
+              <AccesibilityMenu />
+              <ColorSchemeButton />
             </Group>
           </Group>
         </Group>

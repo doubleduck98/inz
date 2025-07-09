@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
@@ -14,22 +15,33 @@ import { Authorize } from './hooks/useAuth.tsx';
 import App from './App.tsx';
 import { ModalsProvider } from '@mantine/modals';
 import { DatesProvider } from '@mantine/dates';
+import { ThemeProvider, useTheme } from './hooks/useTheme.tsx';
 
 dayjs.extend(customParseFormat);
 dayjs.extend(localizedFormat);
 dayjs.locale('pl');
 
+// centralize mantine providers, mostly for the theme hook
+const MantineRoot = () => {
+  const { currentTheme } = useTheme();
+  return (
+    <MantineProvider theme={currentTheme} defaultColorScheme="auto">
+      <ModalsProvider>
+        <DatesProvider settings={{ locale: 'pl' }}>
+          <App />
+        </DatesProvider>
+      </ModalsProvider>
+    </MantineProvider>
+  );
+};
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <Authorize>
-        <MantineProvider defaultColorScheme="dark">
-          <ModalsProvider>
-            <DatesProvider settings={{ locale: 'pl' }}>
-              <App />
-            </DatesProvider>
-          </ModalsProvider>
-        </MantineProvider>
+        <ThemeProvider>
+          <MantineRoot />
+        </ThemeProvider>
       </Authorize>
     </BrowserRouter>
   </StrictMode>
