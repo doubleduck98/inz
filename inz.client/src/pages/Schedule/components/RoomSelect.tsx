@@ -8,7 +8,7 @@ import {
   ScrollArea,
 } from '@mantine/core';
 import { useState } from 'react';
-import axiosInstance from '../../../Axios';
+import axiosInstance from '@/utils/Axios';
 import { Room } from '../types/Room';
 
 interface RoomSelectProps {
@@ -42,7 +42,6 @@ const RoomSelect = ({
     const opts = {
       url: `Bookings/Rooms`,
       method: 'GET',
-      withCredentials: true,
     };
     try {
       const { data } = await axiosInstance.request(opts);

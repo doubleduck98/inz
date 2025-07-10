@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { startOfWeekDate } from './Calendar/CalendarUtils';
 import { useMediaQuery } from '@mantine/hooks';
 import { WeekSchedule } from './types/WeekSchedule';
-import axiosInstance from '../../Axios';
+import axiosInstance from '@/utils/Axios';
 import { Booking } from './types/Booking';
 import { Display } from './types/Display';
 import { AddFormValues } from './AddForm/AddFormContext';
@@ -55,7 +55,6 @@ const useSchedule = (): UseSchedule => {
     const opts = {
       url: 'Bookings/Get',
       method: 'GET',
-      withCredentials: true,
       params: params,
     };
 
@@ -107,7 +106,6 @@ const useSchedule = (): UseSchedule => {
     const opts = {
       url: `Bookings/Create`,
       method: 'POST',
-      withCredentials: true,
       data: {
         bookings: values.bookings,
         patientId: values.patientId,
@@ -158,7 +156,6 @@ const useSchedule = (): UseSchedule => {
     const opts = {
       url: `Bookings/Edit/${values.id}`,
       method: 'PUT',
-      withCredentials: true,
       data: {
         patientId: values.patientId,
         roomId: values.roomId,
@@ -190,7 +187,6 @@ const useSchedule = (): UseSchedule => {
     const opts = {
       url: `Bookings/Delete/${id}`,
       method: 'DELETE',
-      withCredentials: true,
     };
 
     await axiosInstance.request(opts);

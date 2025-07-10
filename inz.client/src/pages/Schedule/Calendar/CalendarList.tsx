@@ -34,8 +34,8 @@ const CalendarList = ({
     </Flex>
   );
   return (
-    <Box w={{ sm: 650 }}>
-      <Stack gap="xl" mb="lg">
+    <Flex flex={1} align="center" direction="column">
+      <Stack gap="xl" mb="lg" w={{ sm: 650 }}>
         {days.map((day, dIdx) => (
           <Box key={dIdx}>
             <Group
@@ -96,7 +96,7 @@ const CalendarList = ({
           </Box>
         ))}
       </Stack>
-    </Box>
+    </Flex>
   );
 };
 

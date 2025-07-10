@@ -1,34 +1,20 @@
-import {
-  Container,
-  Group,
-  Button,
-  Text,
-  Stack,
-  Popover,
-  SegmentedControl,
-  Grid,
-} from '@mantine/core';
-import {
-  IconCalendarSearch,
-  IconChevronLeft,
-  IconChevronRight,
-} from '@tabler/icons-react';
+import { Container, Stack, Grid } from '@mantine/core';
 import dayjs, { Dayjs } from 'dayjs';
-import CalendarPicker from './Calendar/CalendarPicker';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
-import { currentWeekFmt, currentWeekMobileFmt } from './Calendar/CalendarUtils';
 import useSchedule from './useSchedule';
 import { Display } from './types/Display';
-import ResponsiveDialog from '../../ResponsiveDialog';
+import ResponsiveDialog from '@/components/ResponsiveDialog';
 import { AddFormProvider, useAddForm } from './AddForm/AddFormContext';
 import AddForm from './AddForm/AddForm';
 import { AxiosError } from 'axios';
-import { ApiError } from '../../types/ApiError';
+import { ApiError } from '@/types/ApiError';
 import { EditFormProvider, useEditForm } from './EditForm/EditFormContext';
 import { Booking } from './types/Booking';
 import EditForm from './EditForm/EditForm';
 import Calendar from './Calendar/Calendar';
 import { useState } from 'react';
+import CalendarControls from './Controls/CalendarControls';
+import SidebarControls from './Controls/SidebarControls';
 
 const Schedule = () => {
   const {
@@ -48,16 +34,12 @@ const Schedule = () => {
     setToday,
   } = useSchedule();
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const [pop, { open: openPopover, close: closePopover }] = useDisclosure();
   const [addFormDialog, { open: openAddForm, close: closeAddForm }] =
     useDisclosure();
   const [editFormDialog, { open: openEditForm, close: closeEditForm }] =
     useDisclosure();
   const [formLoading, setFormLoading] = useState(false);
-  const handleDateChange = (date: Dayjs) => {
-    setDate(date);
-    closePopover();
-  };
+  const handleDateChange = (date: Dayjs) => setDate(date);
   const handleDisplayChange = (value: string) => setDisplay(value as Display);
 
   const addForm = useAddForm({
@@ -168,70 +150,20 @@ const Schedule = () => {
     }
   };
 
-  const displayControls = [
-    { label: 'Dzień', value: 'day' },
-    { label: 'Tydzień', value: 'week' },
-    { label: 'Lista', value: 'list' },
-  ];
-  const mobileDispControls = [
-    { label: 'Dzień', value: 'day' },
-    { label: 'Tydzień', value: 'list' },
-  ];
-
   return (
     <Container fluid maw={1300}>
       <Grid justify="center">
         <Grid.Col span="auto">
           <Stack gap="lg" mb="lg" align={isMobile ? '' : 'center'}>
-            <Group
-              justify="center"
-              hiddenFrom="sm"
-              grow
-              preventGrowOverflow={false}
-            >
-              <SegmentedControl
-                size="md"
-                maw={'60%'}
-                value={display}
-                onChange={handleDisplayChange}
-                withItemsBorders={false}
-                data={mobileDispControls}
-              />
-              <Button variant="gradient" onClick={openAddForm}>
-                Dodaj
-              </Button>
-            </Group>
-            <Popover withOverlay opened={pop} onDismiss={closePopover}>
-              <Popover.Target>
-                <Button
-                  variant="transparent"
-                  color="gray"
-                  h={60}
-                  onClick={openPopover}
-                  leftSection={
-                    <IconCalendarSearch
-                      style={{ padding: 2 }}
-                      size={isMobile ? 24 : 40}
-                    />
-                  }
-                >
-                  <Text fw={500} fz={{ base: 24, sm: 40 }}>
-                    {display === 'day'
-                      ? currentDay.format('DD MMMM YYYY')
-                      : isMobile
-                        ? currentWeekMobileFmt(currentDay)
-                        : currentWeekFmt(currentDay)}
-                  </Text>
-                </Button>
-              </Popover.Target>
-              <Popover.Dropdown>
-                <CalendarPicker
-                  date={currentDay.format()}
-                  setDate={handleDateChange}
-                  display={display}
-                />
-              </Popover.Dropdown>
-            </Popover>
+            <CalendarControls
+              display={display}
+              date={currentDay}
+              changeDate={handleDateChange}
+              changeDisplay={handleDisplayChange}
+              openAddForm={openAddForm}
+              prev={prev}
+              next={next}
+            />
             <Calendar
               display={display}
               loading={loading}
@@ -245,31 +177,14 @@ const Schedule = () => {
           </Stack>
         </Grid.Col>
         <Grid.Col visibleFrom="sm" span="content">
-          <Stack>
-            <SegmentedControl
-              size="md"
-              value={display}
-              onChange={handleDisplayChange}
-              withItemsBorders={false}
-              data={displayControls}
-            />
-            <Group>
-              <Button variant="default" onClick={setToday}>
-                Teraz
-              </Button>
-              <Button.Group>
-                <Button variant="default" onClick={prev}>
-                  <IconChevronLeft />
-                </Button>
-                <Button variant="default" onClick={next}>
-                  <IconChevronRight />
-                </Button>
-              </Button.Group>
-            </Group>
-            <Button variant="gradient" onClick={openAddForm}>
-              Dodaj
-            </Button>
-          </Stack>
+          <SidebarControls
+            display={display}
+            changeDisplay={handleDisplayChange}
+            setToday={setToday}
+            prev={prev}
+            next={next}
+            openAddForm={openAddForm}
+          />
         </Grid.Col>
       </Grid>
 

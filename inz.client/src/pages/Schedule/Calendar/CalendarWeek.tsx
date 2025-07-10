@@ -1,10 +1,16 @@
-import { Box, Stack, Text, Flex, LoadingOverlay } from '@mantine/core';
+import { Box, Stack, Text, Flex, LoadingOverlay, Group } from '@mantine/core';
 import dayjs, { Dayjs } from 'dayjs';
 import classes from './Calendar.module.css';
 import { WeekSchedule } from '../types/WeekSchedule';
 import BookingCard from './BookingCard';
 import { Booking } from '../types/Booking';
-import { END_HOUR, HOUR_HEIGHT, IDX_FORMAT, START_HOUR } from './Constants';
+import {
+  END_HOUR,
+  HOUR_HEIGHT,
+  IDX_FORMAT,
+  START_HOUR,
+  TIME_PL,
+} from './Constants';
 
 interface CalendarWeekProps {
   currentDate: Dayjs;
@@ -31,25 +37,17 @@ const CalendarWeek = ({
   const days = Array.from({ length: 5 }, (_, i) => start.add(i, 'day'));
 
   return (
-    <Box w={{ sm: 650, xl: 950 }}>
+    <Flex flex={1} direction="column">
       <Flex className={classes.header}>
-        <Box className={classes.time} />
-        <Flex flex={1}>
+        <Group justify="space-between" w="100%" pl={TIME_PL}>
           {days.map((d) => (
             <Text key={d.format()} className={classes.headerText}>
               {d.format('dddd')} {d.format('DD.MM')}
             </Text>
           ))}
-        </Flex>
+        </Group>
       </Flex>
-      <Flex>
-        <Stack className={classes.time} align="flex-end" gap={0}>
-          {hours.map((hour, i) => (
-            <Box key={i} className={classes.timeHr}>
-              <Text className={classes.timeText}>{hour.format('HH:mm')}</Text>
-            </Box>
-          ))}
-        </Stack>
+      <Box pl={TIME_PL}>
         <Flex flex={1} pos="relative">
           <LoadingOverlay
             visible={loading}
@@ -68,34 +66,34 @@ const CalendarWeek = ({
           />
           {days.map((date, i) => {
             const daySchedule = weekSchedule[date.format(IDX_FORMAT)] || [];
-            const bookingCards =
-              weekSchedule && daySchedule
-                ? daySchedule.map((booking, idx) => (
-                    <BookingCard
-                      key={idx}
-                      booking={booking}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
-                    />
-                  ))
-                : [];
             return (
               <Box
                 key={i}
                 className={`${classes.dayCol} ${i === days.length - 1 ? classes.dayColRightBorder : ''}`}
               >
-                {bookingCards}
-                <Stack className={classes.hourStack} gap={0}>
-                  {hours.map((_, index) => (
-                    <Box key={index} className={classes.hourLine} />
+                {daySchedule.map((booking, idx) => (
+                  <BookingCard
+                    key={idx}
+                    booking={booking}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                  />
+                ))}
+                <Stack gap={0}>
+                  {hours.map((hour, index) => (
+                    <Box
+                      key={index}
+                      className={classes.hourLine}
+                      data-hour={i === 0 ? hour.format('HH:mm') : undefined}
+                    />
                   ))}
                 </Stack>
               </Box>
             );
           })}
         </Flex>
-      </Flex>
-    </Box>
+      </Box>
+    </Flex>
   );
 };
 

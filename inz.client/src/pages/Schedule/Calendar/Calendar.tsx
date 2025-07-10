@@ -29,7 +29,7 @@ const Calendar = ({
   onDelete,
 }: CalendarProps) => {
   return (
-    <Box pos="relative">
+    <Box pos="relative" w="100%">
       {display === 'day' && (
         <CalendarDay
           date={currentDay}

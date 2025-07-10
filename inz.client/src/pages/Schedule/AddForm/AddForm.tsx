@@ -20,8 +20,8 @@ import dayjs, { Dayjs } from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { Available } from '../types/Available';
 import TimePicker from './TimePicker';
-import axiosInstance from '../../../Axios';
-import PatientSelect from '../components/PatientSelect';
+import axiosInstance from '@/utils/Axios';
+import PatientSelect from '@/components/PatientSelect';
 import RoomSelect from '../components/RoomSelect';
 
 const IDX_FORMAT = 'YYYY-MM-DD';
@@ -71,7 +71,6 @@ const AddForm = ({ loading }: AddFormProps) => {
     const opts = {
       url: `Bookings/GetFree`,
       method: 'Get',
-      withCredentials: true,
       params: {
         roomId: form.getValues().roomId,
         dates: dates.map((b) => b.format(IDX_FORMAT)),

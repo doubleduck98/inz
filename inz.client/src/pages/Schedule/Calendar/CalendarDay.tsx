@@ -3,7 +3,8 @@ import dayjs, { Dayjs } from 'dayjs';
 import classes from './Calendar.module.css';
 import BookingCard from './BookingCard';
 import { Booking } from '../types/Booking';
-import { END_HOUR, HOUR_HEIGHT, START_HOUR } from './Constants';
+import { END_HOUR, START_HOUR, TIME_PL } from './Constants';
+import { useMediaQuery } from '@mantine/hooks';
 
 interface CalendarDayProps {
   date: Dayjs;
@@ -26,33 +27,16 @@ const CalendarDay = ({
   onEdit,
   onDelete,
 }: CalendarDayProps) => {
-  const bookingCards = schedule.map((booking, i) => (
-    <BookingCard
-      key={i}
-      booking={booking}
-      onEdit={onEdit}
-      onDelete={onDelete}
-    />
-  ));
-
+  const isMobile = useMediaQuery('(max-width: 768px)');
   return (
-    <Box w={{ sm: 650 }}>
+    <Flex flex={1} align="center" direction="column">
       <Flex className={classes.header}>
-        <Box w={{ base: 40, sm: 60 }} />
-        <Flex flex={1}>
+        <Flex flex={1} justify="center" pl={isMobile ? TIME_PL / 2 : TIME_PL}>
           <Text className={classes.headerText}>{date.format('dddd')}</Text>
         </Flex>
       </Flex>
 
-      <Flex>
-        <Stack w={{ base: 40, sm: 60 }} align="flex-end" pr="xs" gap={0}>
-          {hours.map((hour, index) => (
-            <Box key={index} h={HOUR_HEIGHT}>
-              <Text className={classes.timeText}>{hour.format('HH:mm')}</Text>
-            </Box>
-          ))}
-        </Stack>
-
+      <Flex w={{ base: '100%', sm: 500 }} pl={isMobile ? TIME_PL / 2 : TIME_PL}>
         <Box className={`${classes.dayCol} ${classes.dayColRightBorder}`}>
           <LoadingOverlay
             visible={loading}
@@ -62,15 +46,26 @@ const CalendarDay = ({
               duration: 200,
             }}
           />
-          {bookingCards}
-          <Stack className={classes.hourStack} gap={0}>
-            {hours.map((_, index) => (
-              <Box key={index} className={classes.hourLine} />
+          {schedule.map((booking, i) => (
+            <BookingCard
+              key={i}
+              booking={booking}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          ))}
+          <Stack gap={0}>
+            {hours.map((hour, index) => (
+              <Box
+                key={index}
+                className={classes.hourLine}
+                data-hour={hour.format('HH:mm')}
+              />
             ))}
           </Stack>
         </Box>
       </Flex>
-    </Box>
+    </Flex>
   );
 };
 

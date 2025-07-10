@@ -1,6 +1,6 @@
 import { Button, Stack } from '@mantine/core';
 import RoomSelect from '../components/RoomSelect';
-import PatientSelect from '../components/PatientSelect';
+import PatientSelect from '@/components/PatientSelect';
 import { useEditFormContext } from './EditFormContext';
 
 interface EditFormProps {

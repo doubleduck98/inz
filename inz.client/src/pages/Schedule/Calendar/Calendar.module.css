@@ -15,21 +15,6 @@
   flex: 1;
 }
 
-.time {
-  width: 60px;
-  padding-right: var(--mantine-spacing-xs);
-}
-
-.timeHr {
-  height: var(--hour-height);
-}
-
-.timeText {
-  color: var(--mantine-color-dimmed);
-  font-size: var(--mantine-font-size-sm);
-  transform: translateY(-50%);
-}
-
 .dayCol {
   position: relative;
   height: calc(var(--hour-height) * (var(--end-hour) - var(--start-hour)));
@@ -55,17 +40,20 @@
   overflow: hidden;
 }
 
-.hourStack {
-  position: absolute;
-  top: 0;
-  left: 0;
-  gap: 0;
-  width: 100%;
-}
-
 .hourLine {
   height: var(--hour-height);
   border-top: 1px solid var(--mantine-color-gray-3);
+}
+
+.hourLine::before {
+  content: attr(data-hour);
+  position: absolute;
+  right: calc(100% + 8px);
+  font-size: 0.9em;
+  color: var(--mantine-color-text);
+  transform: translateY(-50%);
+  text-align: right;
+  color: var(--mantine-color-dimmed);
 }
 
 .bookingActionIcon {
