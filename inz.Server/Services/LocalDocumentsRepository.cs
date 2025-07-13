@@ -7,7 +7,8 @@ public interface IDocumentsRepository
     public Task<string> SaveDocument(string userId, IFormFile file, string fileName);
     public Task<string> RenameDocument(string userId, string path, string newName);
     public Task<string> SoftDeleteDocument(string userId, string path);
-    public Task<string> RestoreDocument(string userId, string path);
+    public Task<string> RestoreDocument(string userId, string path, string newFileName);
+    public Task DeleteDocument(string userId, string path);
 }
 
 public class LocalDocumentsRepository : IDocumentsRepository
@@ -67,12 +68,18 @@ public class LocalDocumentsRepository : IDocumentsRepository
         return Task.FromResult(newHash);
     }
 
-    public Task<string> RestoreDocument(string userId, string path)
+    public Task<string> RestoreDocument(string userId, string path, string newFileName)
     {
         var oldPath = Path.Combine(_dir, userId, path);
-        var newHash = path.Split("_",3).Last();
-        var newPath = Path.Combine(_dir, userId, newHash);
+        var newPath = Path.Combine(_dir, userId, newFileName);
         File.Move(oldPath, newPath);
-        return Task.FromResult(newHash);
+        return Task.FromResult(newFileName);
+    }
+
+    public Task DeleteDocument(string userId, string path)
+    {
+        var filePath = Path.Combine(_dir, userId, path);
+        File.Delete(filePath);
+        return Task.CompletedTask;
     }
 }

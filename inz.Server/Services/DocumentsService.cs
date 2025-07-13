@@ -10,12 +10,14 @@ public interface IDocumentsService
 {
     public Task<Result<DocumentStreamDto>> GetFileStream(string userId, int fileId);
     public Task<Result<DocumentStreamDto>> GetFileArchive(string userId, int[] fileIds);
-    public Task<List<DocumentDto>> GetFiles(string userId);
+    public Task<List<DocumentDto>> GetDocuments(string userId);
+    public Task<List<DeletedDocDto>> GetDeletedDocuments(string userId);
     public Task<Result<DocumentDto>> SaveDocument(string userId, CreateFileReq req);
     public Task<Result<DocumentDto>> EditDocument(string userId, int id, EditFileReq req);
     public Task<Result> DeleteDocument(string userId, int id);
     public Task<Result> DeleteDocuments(string userId, int[] fileIds);
-    public Task<Result> RestoreDocument(string userId, int id);
+    public Task<Result<DocumentDto>> RestoreDocument(string userId, int id);
+    public Task<Result> PurgeDocument(string userId, int id);
 }
 
 public class DocumentsService : IDocumentsService
@@ -43,7 +45,12 @@ public class DocumentsService : IDocumentsService
     {
         var docs = _db.Documents.Where(d => d.OwnerId == userId && fileIds.Contains(d.Id));
         if (await docs.CountAsync() != fileIds.Length) return Result.Failure<DocumentStreamDto>(Error.FileNotFound);
-        var streams = await docs.SelectAsync(async d => (d, await _documents.GetDocument(userId, d.SourcePath)));
+        var streamsTasks = docs.AsEnumerable().Select(async d =>
+        {
+            var stream = await _documents.GetDocument(userId, d.SourcePath);
+            return (d, stream);
+        });
+        var streams = await Task.WhenAll(streamsTasks);
 
         var zipStream = new MemoryStream();
         using (var zip = new ZipArchive(zipStream, ZipArchiveMode.Create, true))
@@ -57,15 +64,25 @@ public class DocumentsService : IDocumentsService
         }
 
         zipStream.Seek(0, SeekOrigin.Begin);
-        return new DocumentStreamDto(zipStream, "pliki_" + DateTime.Now + ".zip");
+        return new DocumentStreamDto(zipStream, "pliki " + DateTime.Now.ToString("g") + ".zip");
     }
 
-    public async Task<List<DocumentDto>> GetFiles(string userId)
+    public async Task<List<DocumentDto>> GetDocuments(string userId)
     {
         return await _db.Documents.Include(d => d.Patient)
             .Where(d => d.OwnerId == userId)
-            .Select(doc => new DocumentDto(doc.Id, doc.FileName,
+            .OrderByDescending(d => d.LastEditUtc).ThenByDescending(d => d.AddedOnUtc)
+            .Select(doc => new DocumentDto(doc.Id, doc.FileName, doc.PatientId,
                 doc.Patient != null ? $"{doc.Patient.Name} {doc.Patient.Surname}" : null))
+            .ToListAsync();
+    }
+
+    public async Task<List<DeletedDocDto>> GetDeletedDocuments(string userId)
+    {
+        return await _db.Documents.IgnoreQueryFilters()
+            .Where(d => d.OwnerId == userId && d.DeletedOnUtc != null)
+            .OrderByDescending(d => d.DeletedOnUtc)
+            .Select(d => new DeletedDocDto(d.Id, d.FileName, d.DeletedOnUtc))
             .ToListAsync();
     }
 
@@ -115,7 +132,7 @@ public class DocumentsService : IDocumentsService
         await _db.SaveChangesAsync();
 
         var pName = $"{userWithPatient.patient.Name} {userWithPatient.patient.Surname}";
-        return new DocumentDto(doc.Id, fileName, pName);
+        return new DocumentDto(doc.Id, fileName, doc.PatientId, pName);
     }
 
     public async Task<Result<DocumentDto>> EditDocument(string userId, int id, EditFileReq req)
@@ -123,6 +140,10 @@ public class DocumentsService : IDocumentsService
         var doc = await _db.Documents.Include(d => d.Patient)
             .SingleOrDefaultAsync(d => d.Id == id && d.OwnerId == userId);
         if (doc == null) return Result.Failure<DocumentDto>(Error.FileNotFound);
+
+        var patient =
+            await _db.Patients.SingleOrDefaultAsync(p => p.Id == req.PatientId && p.CoordinatingUserId == userId);
+        if (patient == null) return Result.Failure<DocumentDto>(Error.PatientNotFound);
 
         var ex = Path.GetExtension(doc.FileName);
         var newFileName = req.FileName;
@@ -135,8 +156,11 @@ public class DocumentsService : IDocumentsService
 
             try
             {
-                var newPath = await _documents.RenameDocument(userId, doc.SourcePath, newFileName);
-                doc.SourcePath = newPath;
+                if (req.FileName != doc.FileName)
+                {
+                    var newPath = await _documents.RenameDocument(userId, doc.SourcePath, newFileName);
+                    doc.SourcePath = newPath;
+                }
             }
             catch (IOException e)
             {
@@ -146,18 +170,17 @@ public class DocumentsService : IDocumentsService
             catch (Exception e)
             {
                 Console.WriteLine(e);
-                return Result.Failure<DocumentDto>(new Error("File.ERROR", e.ToString(), 500));
+                return Result.Failure<DocumentDto>(new Error("File.ERROR", e.Message, 500));
             }
         }
-        
+
         doc.FileName = newFileName;
-        doc.PatientId = req.PatientId;
+        doc.Patient = patient;
         doc.LastEditUtc = DateTime.UtcNow;
         _db.Documents.Update(doc);
         await _db.SaveChangesAsync();
-        
-        var patientName = $"{doc.Patient?.Name} {doc.Patient?.Surname}";
-        return new DocumentDto(doc.Id, doc.FileName, patientName);
+
+        return new DocumentDto(doc.Id, doc.FileName, patient.Id, $"{patient.Name} {patient.Surname}");
     }
 
     public async Task<Result> DeleteDocument(string userId, int id)
@@ -188,17 +211,58 @@ public class DocumentsService : IDocumentsService
         return Result.Success();
     }
 
-    public async Task<Result> RestoreDocument(string userId, int id)
+    public async Task<Result<DocumentDto>> RestoreDocument(string userId, int id)
     {
-        var doc = await _db.Documents.IgnoreQueryFilters().SingleOrDefaultAsync(d => d.Id == id && d.OwnerId == userId);
-        if (doc is not { DeletedOnUtc: not null }) return Result.Failure(Error.FileNotFound);
+        var doc = await _db.Documents.IgnoreQueryFilters()
+            .Include(d => d.Patient)
+            .SingleOrDefaultAsync(d => d.Id == id && d.OwnerId == userId);
+        if (doc is not { DeletedOnUtc: not null }) return Result.Failure<DocumentDto>(Error.FileNotFound);
 
-        var isNotUnique = await _db.Documents.AnyAsync(d => d.FileName == doc.FileName);
-        if (isNotUnique) return Result.Failure(Error.FileAlreadyExists);
+        // if we make an attempt to restore a file and another already has that name,
+        // calculate new file name, appending serial numbers to the original name,
+        // mimicking web browser behaviour, when downloading the same file multiple times
+        var newFileName = doc.FileName;
+        var counter = 1;
+        while (await _db.Documents.AnyAsync(d => d.SourcePath == newFileName && d.OwnerId == userId))
+        {
+            var stripped = Path.GetFileNameWithoutExtension(doc.FileName);
+            var ex = Path.GetExtension(doc.FileName);
+            newFileName = $"{stripped} ({counter}){ex}";
+            counter += 1;
+        }
 
-        var newPath = await _documents.RestoreDocument(userId, doc.SourcePath);
+        var newPath = await _documents.RestoreDocument(userId, doc.SourcePath, newFileName);
         doc.DeletedOnUtc = null;
+        doc.FileName = newFileName;
+        doc.LastEditUtc = DateTime.UtcNow;
         doc.SourcePath = newPath;
+        await _db.SaveChangesAsync();
+        return Result.Success(new DocumentDto(doc.Id, doc.FileName, doc.PatientId,
+            doc.Patient != null ? $"{doc.Patient.Name} {doc.Patient.Surname}" : null));
+    }
+
+    public async Task<Result> PurgeDocument(string userId, int id)
+    {
+        var doc = await _db.Documents.IgnoreQueryFilters()
+            .SingleOrDefaultAsync(d => d.Id == id && d.OwnerId == userId && d.DeletedOnUtc != null);
+        if (doc == null) return Result.Failure(Error.FileNotFound);
+
+        try
+        {
+            await _documents.DeleteDocument(userId, doc.SourcePath);
+        }
+        catch (DirectoryNotFoundException e)
+        {
+            Console.WriteLine(e.ToString());
+            return Result.Failure(Error.FileNotPresent);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.ToString());
+            return Result.Failure<DocumentDto>(new Error("File.ERROR", e.Message, 500));
+        }
+
+        _db.Documents.Remove(doc);
         await _db.SaveChangesAsync();
         return Result.Success();
     }
@@ -211,13 +275,4 @@ public class DocumentsService : IDocumentsService
         ".txt" => FileType.Txt,
         _ => null
     };
-}
-
-public static class TaskExtensions
-{
-    public static async Task<IEnumerable<TResult>> SelectAsync<TSource, TResult>(
-        this IEnumerable<TSource> source, Func<TSource, Task<TResult>> method)
-    {
-        return await Task.WhenAll(source.Select(method));
-    }
 }

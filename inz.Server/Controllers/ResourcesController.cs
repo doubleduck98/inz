@@ -1,40 +1,27 @@
 using inz.Server.Dtos.Resources;
 using inz.Server.Services;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace inz.Server.Controllers;
 
 [ApiController]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [Route("[controller]/[action]")]
-public class ResourcesController : ControllerBase
+public class ResourcesController : ApiBaseController
 {
     private readonly IDocumentsService _docs;
-    private readonly IHttpContextAccessor _contextAccessor;
 
-    private string UserId => _contextAccessor.HttpContext?.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ??
-                             throw new AuthenticationFailureException("User id claim not found");
-
-    public ResourcesController(
-        [FromServices] IDocumentsService documents,
-        [FromServices] IHttpContextAccessor contextAccessor
-    )
+    public ResourcesController([FromServices] IDocumentsService documents)
     {
-        _contextAccessor = contextAccessor;
         _docs = documents;
     }
-
-    private ObjectResult ProblemResponse(Result result) =>
-        Problem(result.Error!.Message, type: result.Error.Type, statusCode: result.Error.Code);
 
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        var docs = await _docs.GetFiles(UserId);
+        var docs = await _docs.GetDocuments(UserId);
         return Ok(docs);
     }
 
@@ -50,9 +37,12 @@ public class ResourcesController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Download([FromQuery] DownloadReq req)
     {
-        var res = await _docs.GetFileArchive(UserId, req.Ids);
+        var singleFile = req.Ids.Length == 1;
+        var res = singleFile
+            ? await _docs.GetFileStream(UserId, req.Ids.First())
+            : await _docs.GetFileArchive(UserId, req.Ids);
         return res.IsSuccess
-            ? File(res.Value.File, "application/zip", res.Value.FileName)
+            ? File(res.Value.File, singleFile ? "application/octet-stream" : "application/zip", res.Value.FileName)
             : ProblemResponse(res);
     }
 
@@ -84,10 +74,24 @@ public class ResourcesController : ControllerBase
         return res.IsSuccess ? NoContent() : ProblemResponse(res);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetDeleted()
+    {
+        var docs = await _docs.GetDeletedDocuments(UserId);
+        return Ok(docs);
+    }
+
     [HttpPost("{id:int}")]
     public async Task<IActionResult> Restore(int id)
     {
         var res = await _docs.RestoreDocument(UserId, id);
-        return res.IsSuccess ? Ok() : ProblemResponse(res);
+        return res.IsSuccess ? Ok(res.Value) : ProblemResponse(res);
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Purge(int id)
+    {
+        var res = await _docs.PurgeDocument(UserId, id);
+        return res.IsSuccess ? NoContent() : ProblemResponse(res);
     }
 }
