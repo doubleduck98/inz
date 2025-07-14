@@ -13,6 +13,7 @@ import { stripExtension } from './utils/DocsUtils';
 import { AxiosError } from 'axios';
 import { ApiError } from '@/types/ApiError';
 import { Doc } from '@/types/Doc';
+import Trash from './Trash/Trash';
 
 const Docs = () => {
   const {
@@ -26,6 +27,8 @@ const Docs = () => {
     editDocument,
     deleteDocument,
     deleteSelectedDocuments,
+    restoreDocument,
+    trashUpToDate,
   } = useDocuments();
 
   const [
@@ -33,6 +36,8 @@ const Docs = () => {
     { open: openUploadDialog, close: closeUploadDialog },
   ] = useDisclosure(false);
   const [editDialogOpened, { open: openEditDialog, close: closeEditDialog }] =
+    useDisclosure(false);
+  const [trashOpened, { open: openTrash, close: closeTrash }] =
     useDisclosure(false);
 
   const form = useUploadForm({
@@ -146,6 +151,7 @@ const Docs = () => {
         docs={docs}
         loading={loading}
         openUploadDialog={openUploadDialog}
+        openTrash={openTrash}
         onEdit={handleEditClick}
         onDelete={handleDelete}
         onDeleteSelection={handleDeleteSelection}
@@ -179,6 +185,13 @@ const Docs = () => {
           </form>
         </EditFormProvider>
       </ResponsiveDialog>
+
+      <Trash
+        opened={trashOpened}
+        onClose={closeTrash}
+        onRestore={restoreDocument}
+        upToDate={trashUpToDate}
+      />
     </>
   );
 };

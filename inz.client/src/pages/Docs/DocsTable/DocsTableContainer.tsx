@@ -14,6 +14,7 @@ interface DocsTableContainerProps {
   onDownload: (id: number) => void;
   onDownloadSelection: (ids: number[]) => void;
   openUploadDialog: () => void;
+  openTrash: () => void;
   onDeleteSelection: (ids: number[]) => void;
 }
 
@@ -25,6 +26,7 @@ const DocsTableContainer = ({
   onDownload,
   onDownloadSelection,
   openUploadDialog,
+  openTrash,
   onDeleteSelection,
 }: DocsTableContainerProps) => {
   const {
@@ -55,6 +57,7 @@ const DocsTableContainer = ({
     <TableButtons
       selection={selection}
       openDialog={openUploadDialog}
+      openTrash={openTrash}
       onDeleteSelection={handleDeleteSelection}
       onDownloadSelection={handleDownloadSelection}
     />

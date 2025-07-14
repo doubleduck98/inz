@@ -47,7 +47,7 @@ const DocsTable = ({
 
   return (
     <ScrollArea.Autosize mah={'85vh'} offsetScrollbars>
-      <Table verticalSpacing="sm" layout="fixed">
+      <Table highlightOnHover verticalSpacing="sm" layout="fixed">
         <TableHeader
           docs={docs}
           selection={selection}

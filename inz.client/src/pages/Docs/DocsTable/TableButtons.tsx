@@ -3,13 +3,14 @@ import {
   IconCloudUpload,
   IconCloudDownload,
   IconTrashX,
+  IconTrash,
 } from '@tabler/icons-react';
 import { pliki } from '../utils/TableUtils';
-import { useMediaQuery } from '@mantine/hooks';
 import { openConfirmDeleteModal } from '@/components/Modals';
 
 interface TableButtonsProps {
   openDialog: () => void;
+  openTrash: () => void;
   selection: number[];
   onDownloadSelection: () => void;
   onDeleteSelection: () => void;
@@ -18,10 +19,10 @@ interface TableButtonsProps {
 const TableButtons = ({
   selection,
   openDialog,
+  openTrash,
   onDownloadSelection,
   onDeleteSelection,
 }: TableButtonsProps) => {
-  const isMobile = useMediaQuery('(max-width: 768px)');
   const handleDeleteSelection = () => {
     openConfirmDeleteModal({
       title: 'Potwierdź usunięcie',
@@ -31,33 +32,44 @@ const TableButtons = ({
   };
 
   return (
-    <SimpleGrid cols={{ base: 3, sm: 1 }} spacing="xs">
+    <SimpleGrid cols={{ base: 2, sm: 1 }} spacing="xs">
       <Button
-        leftSection={isMobile ? undefined : <IconCloudUpload />}
-        rightSection={isMobile ? undefined : <span />}
+        leftSection={<IconCloudUpload />}
+        rightSection={<span />}
         variant="gradient"
         onClick={openDialog}
-        justify={isMobile ? 'center' : 'space-between'}
+        justify="space-between"
       >
         Prześlij
       </Button>
       <Button
-        leftSection={isMobile ? undefined : <IconCloudDownload />}
-        rightSection={isMobile ? undefined : <span />}
-        variant="default"
+        leftSection={<IconTrash />}
+        rightSection={<span />}
+        variant="light"
+        color="gray"
+        onClick={openTrash}
+        justify="space-between"
+      >
+        Kosz
+      </Button>
+      <Button
+        leftSection={<IconCloudDownload />}
+        rightSection={<span />}
+        variant="light"
+        color="gray"
         disabled={selection.length === 0}
-        justify={isMobile ? 'center' : 'space-between'}
+        justify="space-between"
         onClick={onDownloadSelection}
       >
         Pobierz
       </Button>
       <Button
-        leftSection={isMobile ? undefined : <IconTrashX />}
-        rightSection={isMobile ? undefined : <span />}
+        leftSection={<IconTrashX />}
+        rightSection={<span />}
         color="red"
         variant="light"
         disabled={selection.length === 0}
-        justify={isMobile ? 'center' : 'space-between'}
+        justify="space-between"
         onClick={handleDeleteSelection}
       >
         Usuń

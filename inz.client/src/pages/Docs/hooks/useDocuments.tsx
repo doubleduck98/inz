@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axiosInstance from '@/utils/Axios';
 import { Doc } from '@/types/Doc';
 import { AxiosProgressEvent, AxiosResponseHeaders } from 'axios';
@@ -18,6 +18,8 @@ interface UseDocuments {
   ) => Promise<void>;
   deleteDocument: (id: number) => Promise<void>;
   deleteSelectedDocuments: (ids: number[]) => Promise<void>;
+  restoreDocument: (id: number) => Promise<void>;
+  trashUpToDate: React.RefObject<boolean>;
 }
 
 const useDocuments = (): UseDocuments => {
@@ -25,6 +27,7 @@ const useDocuments = (): UseDocuments => {
   const [loading, setLoading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('waiting');
   const [uploadProgress, setUploadProgress] = useState(0);
+  const trashUpToDate = useRef(false);
 
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -92,7 +95,7 @@ const useDocuments = (): UseDocuments => {
       });
       getFile(data, headers as AxiosResponseHeaders);
     } catch (e) {
-      console.error('Error downloading documents:', e);
+      console.error(e);
     }
   };
 
@@ -112,7 +115,7 @@ const useDocuments = (): UseDocuments => {
 
       getFile(data, headers as AxiosResponseHeaders);
     } catch (e) {
-      console.error('Error downloading documents:', e);
+      console.error(e);
     }
   };
 
@@ -159,14 +162,14 @@ const useDocuments = (): UseDocuments => {
     const opts = {
       url: `Resources/Delete/${id}`,
       method: 'DELETE',
-      withCredentials: true,
     };
 
     try {
       await axiosInstance.request(opts);
       setDocs((prevDocs) => prevDocs.filter((d) => d.id !== id));
+      trashUpToDate.current = false;
     } catch (e) {
-      console.error('Error deleting document:', e);
+      console.error(e);
       throw e;
     }
   };
@@ -175,7 +178,6 @@ const useDocuments = (): UseDocuments => {
     const opts = {
       url: `Resources/Delete/`,
       method: 'DELETE',
-      withCredentials: true,
       data: {
         ids: ids,
       },
@@ -184,8 +186,24 @@ const useDocuments = (): UseDocuments => {
     try {
       await axiosInstance.request(opts);
       setDocs((prevDocs) => prevDocs.filter((d) => !ids.includes(d.id)));
+      trashUpToDate.current = false;
     } catch (e) {
-      console.error('Error deleting selected documents:', e);
+      console.error(e);
+      throw e;
+    }
+  };
+
+  const restoreDocument = async (id: number) => {
+    const opts = {
+      url: `Resources/Restore/${id}`,
+      method: 'POST',
+    };
+
+    try {
+      const { data } = await axiosInstance.request(opts);
+      setDocs((prev) => [data, ...prev]);
+    } catch (e) {
+      console.error(e);
       throw e;
     }
   };
@@ -201,6 +219,8 @@ const useDocuments = (): UseDocuments => {
     editDocument,
     deleteDocument,
     deleteSelectedDocuments,
+    restoreDocument,
+    trashUpToDate,
   };
 };
 

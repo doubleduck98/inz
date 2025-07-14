@@ -1,6 +1,13 @@
 import { openConfirmDeleteModal } from '@/components/Modals';
 import { Doc } from '@/types/Doc';
-import { ActionIcon, Group, Menu, MenuItem, Text } from '@mantine/core';
+import {
+  ActionIcon,
+  Group,
+  Menu,
+  MenuItem,
+  Text,
+  Tooltip,
+} from '@mantine/core';
 import {
   IconDots,
   IconDownload,
@@ -75,23 +82,29 @@ const TableRowButtons = ({
       </Menu>
 
       <Group visibleFrom="sm" gap={3}>
-        <ActionIcon
-          variant="subtle"
-          color="gray"
-          onClick={() => onDownload(doc.id)}
-        >
-          <IconDownload size={21} />
-        </ActionIcon>
-        <ActionIcon variant="subtle" color="gray" onClick={() => onEdit(doc)}>
-          <IconEdit size={21} />
-        </ActionIcon>
-        <ActionIcon
-          variant="subtle"
-          color="red"
-          onClick={() => handleDelete(doc.id)}
-        >
-          <IconTrash size={21} />
-        </ActionIcon>
+        <Tooltip label="Pobierz">
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            onClick={() => onDownload(doc.id)}
+          >
+            <IconDownload size={21} />
+          </ActionIcon>
+        </Tooltip>
+        <Tooltip label="Edutuj">
+          <ActionIcon variant="subtle" color="gray" onClick={() => onEdit(doc)}>
+            <IconEdit size={21} />
+          </ActionIcon>
+        </Tooltip>
+        <Tooltip label="Usuń">
+          <ActionIcon
+            variant="subtle"
+            color="red"
+            onClick={() => handleDelete(doc.id)}
+          >
+            <IconTrash size={21} />
+          </ActionIcon>
+        </Tooltip>
       </Group>
     </>
   );
