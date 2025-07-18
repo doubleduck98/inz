@@ -1,8 +1,6 @@
 using inz.Server.Services;
 using inz.Server.ViewModels;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 
@@ -35,11 +33,11 @@ public class AccountController : Controller
             var returnUrl = HttpContext.Request.Query["returnUrl"];
             var redirectUrl = returnUrl.IsNullOrEmpty()
                 ? "https://localhost:5173"
-                : $"https://localhost:5173/{returnUrl}";
+                : $"https://localhost:5173{returnUrl}";
             return Redirect(redirectUrl);
         }
 
-        ModelState.AddModelError("Auth", "Nieprawidłowe dane logowania");
+        ModelState.AddModelError("Auth", "Nieprawidłowe dane logowania!");
         return View(model);
     }
 

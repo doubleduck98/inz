@@ -1,29 +1,45 @@
 @model inz.Server.ViewModels.LoginModel
 @{
-    ViewData["Title"] = "Login page";
+    ViewData["Title"] = "Strona logowania";
+    var invalidEmail = ViewData.ModelState["Email"] != null;
+    var invalidPassword = ViewData.ModelState["Password"] != null;
 }
 
 <html lang="">
-<head>
-    <meta name="viewport" content="width=device-width"/>
-    <title>Login</title>
-</head>
 <body>
-@Html.ValidationMessage("Auth")
-@using (Html.BeginForm())
-{
-    <div class="form-group">
-        @Html.LabelFor(m => m.Email, "Email")
-        @Html.TextBoxFor(m => m.Email)
-        @Html.ValidationMessageFor(m => m.Email)
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="card-title text-center mb-4">Zaloguj się</h2>
+
+                    @if (ViewData.ModelState["Auth"] != null)
+                    {
+                        <div class="alert alert-danger text-center" role="alert">
+                            @Html.ValidationMessage("Auth")
+                        </div>
+                    }
+
+                    @using (Html.BeginForm(null, null, FormMethod.Post, new { @class = "novalidate" }))
+                    {
+                        <div class="form-group mb-3">
+                            @Html.LabelFor(m => m.Email, "Email")
+                            @Html.TextBoxFor(m => m.Email, new { @class = $"form-control {(invalidEmail ? "is-invalid" : "")}", placeholder = "Podaj adres email", type = "email", required = "required" })
+                            @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-danger" })
+                        </div>
+                        <div class="form-group mb-4">
+                            @Html.LabelFor(m => m.Password, "Hasło")
+                            @Html.PasswordFor(m => m.Password, new { @class = $"form-control {(invalidPassword ? "is-invalid" : "")}", placeholder = "Podaj swoje hasło", required = "required" })
+                            @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-danger" })
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">Zaloguj się</button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="form-group">
-        @Html.LabelFor(m => m.Password, "Hasło")
-        @Html.PasswordFor(m => m.Password)
-        @Html.ValidationMessageFor(m => m.Password)
-    </div>
-    <div class="margin-top">
-        <button type="submit" class="btn btn-primary">Log in</button>
-    </div>
-}
+</div>
 </body>

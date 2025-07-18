@@ -86,6 +86,8 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+app.UseStaticFiles();
+
 // endpoits
 app.MapTestEndpoints();
 
