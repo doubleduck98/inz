@@ -7,6 +7,9 @@ interface ConfirmModalOptions {
   onConfirm: () => void;
 }
 
+/**
+ * Centralised component for managing deletion confirmation modal
+ */
 export const openConfirmDeleteModal = ({
   title,
   message,

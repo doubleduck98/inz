@@ -10,7 +10,16 @@ namespace inz.Server.Services;
 
 public interface ITokenProvider
 {
+    /// <summary>
+    /// Method for creating JWT access token for user.
+    /// </summary>
+    /// <param name="user">Specified user.</param>
+    /// <param name="claims">List of user's claims</param>
     public string CreateToken(User user, IList<Claim> claims);
+
+    /// <summary>
+    /// Creates refresh token with no information.
+    /// </summary>
     public string CreateRefreshToken();
 }
 
@@ -22,9 +31,7 @@ public class TokenProvider(IConfiguration configuration) : ITokenProvider
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret!));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
         var cs = claims.Concat([
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-                new Claim(JwtRegisteredClaimNames.Name, user.Name!),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email!)
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id)
             ]
         );
         var tokenDescriptor = new SecurityTokenDescriptor

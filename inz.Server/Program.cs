@@ -1,6 +1,5 @@
 using System.Text;
 using inz.Server;
-using inz.Server.Controllers;
 using inz.Server.Data;
 using inz.Server.Models;
 using inz.Server.Services;
@@ -25,7 +24,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // identity
 builder.Services.AddIdentityCore<User>()
     .AddUserManager<UserManager<User>>()
-    .AddEntityFrameworkStores<AppDbContext>();
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddRoleManager<RoleManager<IdentityRole>>()
+    .AddDefaultTokenProviders();
 
 // JWT Token
 builder.Services.AddSingleton<ITokenProvider, TokenProvider>();
@@ -34,9 +36,18 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
         options.LoginPath = "/Account/Login";
+        options.AccessDeniedPath = "/Account/Login";
+        options.ExpireTimeSpan = TimeSpan.FromHours(1);
+        options.SlidingExpiration = true;
         options.Events.OnRedirectToLogin = context =>
         {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            if (context.Request.Path.StartsWithSegments("/Auth"))
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            }
+
+            context.Response.Redirect(context.RedirectUri);
             return Task.CompletedTask;
         };
     })
@@ -58,6 +69,7 @@ builder.Services.AddScoped<IDocumentsService, DocumentsService>();
 builder.Services.AddScoped<IDocumentsRepository, LocalDocumentsRepository>();
 builder.Services.AddScoped<IPatientsService, PatientsService>();
 builder.Services.AddScoped<IBookingsService, BookingService>();
+builder.Services.AddScoped<IUsersService, UsersService>();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -88,11 +100,15 @@ app.MapControllers();
 
 app.UseStaticFiles();
 
-// endpoits
-app.MapTestEndpoints();
+// seed dummy admin user and user roles
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    await DataSeeder.SeedInitial(services);
+}
 
 app.MapFallbackToFile("/index.html");
-    
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}");

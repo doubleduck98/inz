@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using inz.Server;
 using inz.Server.Controllers;
+using inz.Server.Controllers.ApiControllers;
 using inz.Server.Dtos.Resources;
 using inz.Server.Services;
 using inz.ServerTest.Factories;
@@ -18,19 +19,24 @@ public class ResourcesControllerTest
 
     public ResourcesControllerTest()
     {
-        var user = new ClaimsPrincipal(new ClaimsIdentity([
-            new Claim(JwtRegisteredClaimNames.Sub, "")
-        ], "Test"));
-        var contextAccessor = new Mock<IHttpContextAccessor>();
-        contextAccessor.Setup(c => c.HttpContext!.User).Returns(user);
-
-        _controller = new ResourcesController(_documentsService.Object, contextAccessor.Object);
+        _controller = new ResourcesController(_documentsService.Object)
+        {
+            ControllerContext =
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity([
+                        new Claim(JwtRegisteredClaimNames.Sub, "")
+                    ], "Test"))
+                }
+            }
+        };
     }
 
     [Fact]
     public async Task Get_ShouldReturnDocList()
     {
-        _documentsService.Setup(d => d.GetFiles(It.IsAny<string>())).ReturnsAsync([]);
+        _documentsService.Setup(d => d.GetDocuments(It.IsAny<string>())).ReturnsAsync([]);
 
         var res = await _controller.Get();
         var oRes = res as ObjectResult;
@@ -144,12 +150,12 @@ public class ResourcesControllerTest
     public async Task Restore_ShouldReturn200()
     {
         _documentsService.Setup(d => d.RestoreDocument(It.IsAny<string>(), It.IsAny<int>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(DtoFactory.DocumentDto);
 
         var res = await _controller.Restore(It.IsAny<int>());
 
-        var okRes = res as OkResult;
-        Assert.IsType<OkResult>(res);
+        var okRes = res as OkObjectResult;
+        Assert.IsType<OkObjectResult>(res);
         Assert.Equal(200, okRes!.StatusCode);
     }
 
@@ -157,7 +163,7 @@ public class ResourcesControllerTest
     public async Task Restore_FileAlreadyFound_ShouldReturn409()
     {
         _documentsService.Setup(d => d.RestoreDocument(It.IsAny<string>(), It.IsAny<int>()))
-            .ReturnsAsync(Result.Failure(Error.FileAlreadyExists));
+            .ReturnsAsync(Result.Failure<DocumentDto>(Error.FileAlreadyExists));
 
         var res = await _controller.Restore(It.IsAny<int>());
 

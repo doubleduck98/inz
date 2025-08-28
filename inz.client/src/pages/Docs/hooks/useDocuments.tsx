@@ -22,6 +22,9 @@ interface UseDocuments {
   trashUpToDate: React.RefObject<boolean>;
 }
 
+/**
+ * Hook for managing documents state.
+ */
 const useDocuments = (): UseDocuments => {
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(false);

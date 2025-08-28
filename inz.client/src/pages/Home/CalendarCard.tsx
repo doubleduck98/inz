@@ -31,7 +31,6 @@ const CalendarCard = () => {
     const opts = {
       url: 'Bookings/Get',
       method: 'GET',
-      withCredentials: true,
       params: { date: date.format('YYYY-MM-DD') },
     };
 

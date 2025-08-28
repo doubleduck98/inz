@@ -9,6 +9,10 @@ interface ResponsiveDialogProps {
   onClose: () => void;
 }
 
+/**
+ * Responsive dialog component rendering modal window in bigger viewports
+ * and drawer component in mobile viewports.
+ */
 const ResponsiveDialog = ({
   children,
   title,

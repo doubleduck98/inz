@@ -38,6 +38,9 @@ export const ThemeProvider = ({ children }: Props) => {
   );
 };
 
+/**
+ * Main theme hook managing high contrast theme.
+ */
 export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
   if (!context) {

@@ -1,0 +1,43 @@
+@model inz.Server.ViewModels.Users.UserDetailsViewModel
+
+@{
+    ViewBag.Title = $"Szczegóły - {Model.Name} {Model.Surname}";
+    Layout = "_AdminLayout";
+}
+
+
+<h1 class="mb-4">Szczegóły Użytkownika</h1>
+
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Podstawowe dane</h5>
+        <div>
+            <a asp-controller="UsersAdmin" asp-action="ResetPassword" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-warning">
+                <i class="bi bi-key-fill me-2"></i>Resetuj hasło
+            </a>
+            <a asp-action="Edit" asp-route-id="@Model.Id"
+               asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)"
+               class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-pencil-fill me-2"></i>Edytuj
+            </a>
+            <a asp-action="Index" class="btn btn-sm btn-secondary">
+                <i class="bi bi-arrow-left-circle me-2"></i>Wróć do listy
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Name)</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.Name)</dd>
+
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Surname)</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.Surname)</dd>
+
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Email)</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.Email)</dd>
+
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.PhoneNumber)</dt>
+            <dd class="col-sm-9">@(string.IsNullOrEmpty(Model.PhoneNumber) ? "Nie podano" : Model.PhoneNumber)</dd>
+        </dl>
+    </div>
+</div>

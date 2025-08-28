@@ -1,6 +1,9 @@
 using inz.Server.Services;
-using inz.Server.ViewModels;
+using inz.Server.ViewModels.Account;
+using inz.Server.ViewModels.Users;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 
@@ -9,10 +12,12 @@ namespace inz.Server.Controllers.MvcControllers;
 public class AccountController : Controller
 {
     private readonly IAuthService _authService;
+    private readonly IUsersService _users;
 
-    public AccountController(IAuthService authService)
+    public AccountController([FromServices] IAuthService authService, [FromServices] IUsersService usersService)
     {
         _authService = authService;
+        _users = usersService;
     }
 
     [HttpGet]
@@ -31,6 +36,12 @@ public class AccountController : Controller
         if (resp.IsSuccess)
         {
             var returnUrl = HttpContext.Request.Query["returnUrl"];
+
+            if (!returnUrl.IsNullOrEmpty() && returnUrl.ToString().StartsWith("/Admin"))
+            {
+                return LocalRedirect(returnUrl!);
+            }
+
             var redirectUrl = returnUrl.IsNullOrEmpty()
                 ? "https://localhost:5173"
                 : $"https://localhost:5173{returnUrl}";
@@ -41,10 +52,52 @@ public class AccountController : Controller
         return View(model);
     }
 
-    [HttpGet]
+    [HttpPost]
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync();
         return LocalRedirect("/Account/Login");
+    }
+
+    [HttpGet]
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+    public IActionResult ChangePassword()
+    {
+        var model = new ChangePasswordViewModel();
+        return View(model);
+    }
+
+    [HttpPost]
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+    public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+    {
+        if (!ModelState.IsValid) return View(model);
+        var userId = User.FindFirst("userId")?.Value;
+        if (userId == null)
+        {
+            await HttpContext.SignOutAsync();
+            return RedirectToAction("Login");
+        }
+
+        var res = await _users.ChangePassword(userId, model.OldPassword, model.NewPassword);
+        if (res.IsSuccess)
+        {
+            TempData["SuccessMessage"] = "Pomyślnie zmieniono hasło.";
+            return RedirectToAction("ChangePassword");
+        }
+
+        switch (res.Error)
+        {
+            case AppErrors.InvalidPasswordError e:
+                ModelState.AddModelError(nameof(model.OldPassword), e.Message);
+                break;
+
+            case AppErrors.GenericError e:
+                ModelState.AddModelError(string.Empty, e.Message);
+                break;
+        }
+
+        return View(model);
     }
 }

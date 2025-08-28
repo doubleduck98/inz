@@ -3,6 +3,9 @@ import { User } from '@/types/User';
 import { createUnauthorizedEvent } from './Events';
 import { RefreshResponse } from '@/types/RefreshResponse';
 
+/**
+ * Main api client managinig comunication with backend api.
+ */
 const axiosInstance = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });

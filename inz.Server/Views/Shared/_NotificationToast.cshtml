@@ -1,0 +1,43 @@
+@{
+    string? message = null;
+    var title = string.Empty;
+    var icon = string.Empty;
+
+    if (TempData["SuccessMessage"] != null)
+    {
+        message = TempData["SuccessMessage"]?.ToString();
+        title = "Sukces!";
+        icon = "bi bi-check-circle-fill text-success";
+    }
+    else if (TempData["ErrorMessage"] != null)
+    {
+        message = TempData["ErrorMessage"]?.ToString();
+        title = "Błąd!";
+        icon = "bi bi-exclamation-triangle-fill text-danger";
+    }
+}
+
+@if (message != null)
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="@icon"></i>
+                <strong class="me-auto px-1">@title</strong>
+                <small>teraz</small>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                @message
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const toastEl = document.getElementById('notificationToast');
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        });
+    </script>
+}

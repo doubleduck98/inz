@@ -1,0 +1,48 @@
+@model inz.Server.ViewModels.Users.EditUserViewModel
+
+@{
+    ViewBag.Title = "Edytuj użytkownika";
+    Layout = "_AdminLayout";
+}
+
+<h2 class="mb-4">Edytuj użytkownika</h2>
+
+<div class="card shadow-sm">
+    <div class="card shadow-sm">
+        <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+            <div class="card-body">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                <input type="hidden" asp-for="ReturnUrl"/>
+                <input type="hidden" asp-for="Id"/>
+
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label"></label>
+                    <input asp-for="Name" class="form-control"/>
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Surname" class="form-label"></label>
+                    <input asp-for="Surname" class="form-control"/>
+                    <span asp-validation-for="Surname" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label"></label>
+                    <input asp-for="Email" class="form-control"/>
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="card-footer text-end">
+                @if (!string.IsNullOrEmpty(Model.ReturnUrl) && Url.IsLocalUrl(Model.ReturnUrl))
+                {
+                    <a href="@Model.ReturnUrl" class="btn btn-outline-secondary">Anuluj</a>
+                }
+                else
+                {
+                    <a asp-action="Index" class="btn btn-outline-secondary">Anuluj</a>
+                }
+                <button type="submit" class="btn btn-primary">Zapisz zmiany</button>
+            </div>
+        </form>
+    </div>
+</div>

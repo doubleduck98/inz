@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 
-namespace inz.Server.Controllers;
+namespace inz.Server.Controllers.ApiControllers;
 
 [ApiController]
 [Route("[controller]/[action]")]

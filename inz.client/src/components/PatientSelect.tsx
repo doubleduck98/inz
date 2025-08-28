@@ -19,6 +19,9 @@ interface PatientSelectProps {
   setPatientIdValue: (value: number | null) => void;
 }
 
+/**
+ * Reusable patient select component, asynchously managing data.
+ */
 const PatientSelect = ({
   defaultValue,
   errorProps,

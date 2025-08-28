@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using inz.Server;
 using inz.Server.Controllers;
+using inz.Server.Controllers.ApiControllers;
 using inz.Server.Dtos.Patients;
 using inz.Server.Services;
 using inz.ServerTest.Factories;
@@ -18,13 +19,19 @@ public class PatientsControllerTest
 
     public PatientsControllerTest()
     {
-        var user = new ClaimsPrincipal(new ClaimsIdentity([
-            new Claim(JwtRegisteredClaimNames.Sub, "")
-        ], "Test"));
-        var contextAccessor = new Mock<IHttpContextAccessor>();
-        contextAccessor.Setup(c => c.HttpContext!.User).Returns(user);
-
-        _controller = new PatientsController(_patientsService.Object, contextAccessor.Object);
+        _controller = new PatientsController(_patientsService.Object)
+        {
+            ControllerContext =
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity([
+                        new Claim(JwtRegisteredClaimNames.Sub, ""),
+                        new Claim("UserId", "")
+                    ], "Test"))
+                }
+            }
+        };
     }
 
     [Fact]

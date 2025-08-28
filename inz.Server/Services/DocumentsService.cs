@@ -1,23 +1,95 @@
 using System.IO.Compression;
 using inz.Server.Data;
+using inz.Server.Dtos.Mvc;
 using inz.Server.Dtos.Resources;
 using inz.Server.Models;
+using inz.Server.ViewModels.Documents;
 using Microsoft.EntityFrameworkCore;
 
 namespace inz.Server.Services;
 
 public interface IDocumentsService
 {
+    /// <summary>
+    /// Retrieves a file stream for given file id.
+    /// </summary>
     public Task<Result<DocumentStreamDto>> GetFileStream(string userId, int fileId);
+
+    /// <summary>
+    /// Retrives file streams for an array of file ids. Then zips them into a compressed archive.
+    /// </summary>
     public Task<Result<DocumentStreamDto>> GetFileArchive(string userId, int[] fileIds);
+
+    /// <summary>
+    /// Returns list of document dtos of given user.
+    /// </summary>
     public Task<List<DocumentDto>> GetDocuments(string userId);
+
+    /// <summary>
+    /// Returns user's deleted documents.
+    /// </summary>
     public Task<List<DeletedDocDto>> GetDeletedDocuments(string userId);
+
+    /// <summary>
+    /// Attempts to save document into file store and database.
+    /// </summary>
     public Task<Result<DocumentDto>> SaveDocument(string userId, CreateFileReq req);
+
+    /// <summary>
+    /// Attempts to edit document info.
+    /// </summary>
     public Task<Result<DocumentDto>> EditDocument(string userId, int id, EditFileReq req);
+
+    /// <summary>
+    /// Performs a soft-delete for a specified document.
+    /// </summary>
     public Task<Result> DeleteDocument(string userId, int id);
+
+    /// <summary>
+    /// Performs a soft-delete for an array of specified documents.
+    /// </summary>
     public Task<Result> DeleteDocuments(string userId, int[] fileIds);
+
+    /// <summary>
+    /// Attempts to restore a soft-deleted document.
+    /// </summary>
     public Task<Result<DocumentDto>> RestoreDocument(string userId, int id);
+
+    /// <summary>
+    /// Wipes a previously soft-deleted document.
+    /// </summary>
     public Task<Result> PurgeDocument(string userId, int id);
+
+    /// <summary>
+    /// Admin method for retrieving paginated list of documents that contain search query in their file name.
+    /// </summary>
+    public Task<DocumentsListDto> AdminGetDocuments(string? search, string? userId, int? patientId, int page,
+        int pageSize);
+
+    /// <summary>
+    /// Admin method for retireving document info.
+    /// </summary>
+    public Task<Result<DocumentDto>> AdminGetDocument(int id);
+
+    /// <summary>
+    /// Admin method for retireving document file  stream.
+    /// </summary>
+    public Task<Result<DocumentStreamDto>> AdminGetFileStream(int id);
+
+    /// <summary>
+    /// Admin method for retrieving document info for edit purposes.
+    /// </summary>
+    public Task<Result<DocumentEditDto>> AdminGetDocumentEdit(int id);
+
+    /// <summary>
+    /// Admin method for editing document info.
+    /// </summary>
+    public Task<Result> AdminEditDocument(int id, DocEditViewModel model);
+
+    /// <summary>
+    /// Admin method for wiping saved document.
+    /// </summary>
+    public Task<Result> AdminDeleteDocument(int id);
 }
 
 public class DocumentsService : IDocumentsService
@@ -260,6 +332,149 @@ public class DocumentsService : IDocumentsService
         {
             Console.WriteLine(e.ToString());
             return Result.Failure<DocumentDto>(new Error("File.ERROR", e.Message, 500));
+        }
+
+        _db.Documents.Remove(doc);
+        await _db.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<DocumentsListDto> AdminGetDocuments(string? search, string? userId, int? patientId, int page,
+        int pageSize)
+    {
+        var docQuery = _db.Documents
+            .Include(d => d.User).Include(d => d.Patient)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            docQuery = docQuery.Where(d => d.FileName.Contains(search));
+        }
+
+        if (!string.IsNullOrEmpty(userId))
+        {
+            docQuery = docQuery.Where(d => d.OwnerId == userId);
+        }
+
+        if (patientId != null)
+        {
+            docQuery = docQuery.Where(d => d.PatientId == patientId);
+        }
+
+        var totalDocs = await docQuery.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalDocs / (double)pageSize);
+
+        var documents = await docQuery
+            .OrderByDescending(d => d.LastEditUtc)
+            .Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(d => new DocumentViewDto(d.Id, d.FileName, d.User!.FullName, d.Patient!.FullName, d.LastEditUtc))
+            .ToListAsync();
+        var users = await _db.Users
+            .OrderBy(u => u.Name).ThenBy(u => u.Surname)
+            .Select(u => new UserDto(u.Id, u.Name, u.Surname, u.Email ?? "", u.PhoneNumber))
+            .ToListAsync();
+        var patients = new List<PatientSelectDto>();
+        if (!string.IsNullOrEmpty(userId))
+        {
+            patients = await _db.Patients.Where(p => p.CoordinatingUserId == userId)
+                .Select(p => new PatientSelectDto(p.Id, p.FullName))
+                .ToListAsync();
+        }
+
+        return new DocumentsListDto(documents, patients, users, totalPages);
+    }
+
+    public async Task<Result<DocumentDto>> AdminGetDocument(int id)
+    {
+        var doc = await _db.Documents.SingleOrDefaultAsync(d => d.Id == id);
+        return doc == null
+            ? Result.Failure<DocumentDto>(new AppErrors.FileNotFound())
+            : new DocumentDto(doc.Id, doc.FileName, null, null);
+    }
+
+    public async Task<Result<DocumentStreamDto>> AdminGetFileStream(int id)
+    {
+        var doc = await _db.Documents.SingleOrDefaultAsync(d => d.Id == id);
+        if (doc == null) return Result.Failure<DocumentStreamDto>(Error.FileNotFound);
+        if (!await _documents.DocumentExists(doc.OwnerId!, doc.SourcePath))
+            return Result.Failure<DocumentStreamDto>(Error.FileNotPresent);
+        var stream = await _documents.GetDocument(doc.OwnerId!, doc.SourcePath);
+        return new DocumentStreamDto(stream, doc.FileName);
+    }
+
+    public async Task<Result<DocumentEditDto>> AdminGetDocumentEdit(int id)
+    {
+        var doc = await _db.Documents.Include(d => d.Patient)
+            .SingleOrDefaultAsync(d => d.Id == id);
+        if (doc == null) return Result.Failure<DocumentEditDto>(new AppErrors.FileNotFound());
+
+        return new DocumentEditDto(doc.Id, doc.FileName, doc.PatientId, doc.OwnerId!);
+    }
+
+    public async Task<Result> AdminEditDocument(int id, DocEditViewModel model)
+    {
+        var doc = await _db.Documents.Include(d => d.Patient)
+            .SingleOrDefaultAsync(d => d.Id == id);
+        if (doc == null) return Result.Failure<DocumentDto>(new AppErrors.FileNotFound());
+
+        var patient = await _db.Patients.SingleOrDefaultAsync(p => p.Id == model.PatientId);
+        if (patient == null) return Result.Failure<DocumentDto>(new AppErrors.PatientNotFound());
+
+        var ex = Path.GetExtension(doc.FileName);
+        var newFileName = model.FileName;
+        if (!model.FileName.EndsWith(ex)) newFileName += ex;
+
+        if (doc.FileName != newFileName)
+        {
+            var alreadyExists = _db.Documents.Any(d => d.FileName == newFileName && d.OwnerId == doc.OwnerId);
+            if (alreadyExists) return Result.Failure<DocumentDto>(new AppErrors.FileAlreadyExists());
+
+            try
+            {
+                if (model.FileName != doc.FileName)
+                {
+                    var newPath = await _documents.RenameDocument(doc.OwnerId!, doc.SourcePath, newFileName);
+                    doc.SourcePath = newPath;
+                }
+            }
+            catch (IOException e)
+            {
+                Console.WriteLine(e.ToString());
+                return Result.Failure<DocumentDto>(new AppErrors.FileAlreadyExists());
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return Result.Failure<DocumentDto>(new Error("File.ERROR", e.Message, 500));
+            }
+        }
+
+        doc.FileName = newFileName;
+        doc.Patient = patient;
+        doc.LastEditUtc = DateTime.UtcNow;
+        _db.Documents.Update(doc);
+        await _db.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> AdminDeleteDocument(int id)
+    {
+        var doc = await _db.Documents.SingleOrDefaultAsync(d => d.Id == id);
+        if (doc == null) return Result.Failure(new AppErrors.FileNotFound());
+
+        try
+        {
+            await _documents.DeleteDocument(doc.OwnerId!, doc.SourcePath);
+        }
+        catch (DirectoryNotFoundException e)
+        {
+            Console.WriteLine(e.ToString());
+            return Result.Failure(new AppErrors.FileNotPresent());
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.ToString());
+            return Result.Failure(new AppErrors.GenericError());
         }
 
         _db.Documents.Remove(doc);

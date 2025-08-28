@@ -1,6 +1,9 @@
 import { Center, Stack, Title, Button, Text, Container } from '@mantine/core';
 import { useLocation } from 'react-router-dom';
 
+/**
+ * Guard page asking user to authenticate again.
+ */
 const Login = () => {
   const location = useLocation();
   const currentPath = location.pathname + location.search;

@@ -1,0 +1,23 @@
+@model inz.Server.ViewModels.Rooms.RoomDeleteViewModel
+
+<div class="modal fade" id="deleteRoomModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
+                <input type="hidden" asp-for="Name"/>
+                
+                <div class="modal-header">
+                    <h5 class="modal-title">Potwierdź Usunięcie</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Czy na pewno chcesz usunąć salę <strong>@Model.Name</strong>?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" class="btn btn-danger" data-save="modal">Usuń</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

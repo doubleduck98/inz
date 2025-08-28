@@ -25,6 +25,8 @@ public class Patient
     public List<PatientContact> Contacts { get; set; } = null!;
     public List<Document> Documents { get; set; } = null!;
     public List<Booking> Bookings { get; set; } = null!;
+
+    public string FullName => $"{Name} {Surname}";
 }
 
 public class PatientConfiguration : IEntityTypeConfiguration<Patient>

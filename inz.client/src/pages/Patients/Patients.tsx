@@ -31,6 +31,9 @@ import dayjs from 'dayjs';
 
 const DATE_FORMAT = 'YYYY-MM-DD';
 
+/**
+ * Central component for patients page.
+ */
 const Patients = () => {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [addDialogOpened, { open: openAddDialog, close: closeAddDialog }] =
@@ -165,7 +168,7 @@ const Patients = () => {
       addConForm.reset();
       closeAddConDialog();
     } catch (e) {
-      console.log(e);
+      console.error(e);
     }
   };
 
@@ -238,7 +241,7 @@ const Patients = () => {
                   loading={detailsLoading}
                 />
               ) : (
-                <Center h="80vh" style={{ alignContent: 'center' }}>
+                <Center h="100%" style={{ alignContent: 'center' }}>
                   <Text c="dimmed">Wybierz pacjenta z listy</Text>
                 </Center>
               )}

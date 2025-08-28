@@ -18,7 +18,7 @@ public class AppDbContext : IdentityDbContext<User>
         builder.ApplyConfiguration(new PatientConfiguration());
         builder.ApplyConfiguration(new PatientContactConfiguraation());
         builder.ApplyConfiguration(new BookingConfiguration());
-        builder.ApplyConfiguration(new RoomConfiguration());        
+        builder.ApplyConfiguration(new RoomConfiguration());
         
         // for { Patient.Name, Patient Surname } index
         builder.HasPostgresExtension("pg_trgm");

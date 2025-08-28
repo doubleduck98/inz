@@ -18,6 +18,9 @@ interface UsePatients {
   addContactToPatient: (contactData: AddContactFormValues) => Promise<void>;
 }
 
+/**
+ * Central hook for managing patiets state.
+ */
 export const usePatients = (): UsePatients => {
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(
     null

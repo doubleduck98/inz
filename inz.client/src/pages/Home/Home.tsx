@@ -27,6 +27,9 @@ const links = [
   },
 ];
 
+/**
+ * Home page component.
+ */
 const Home = () => {
   const banners = links.map((i) => <ActionBanner {...i} key={i.link} />);
   return (

@@ -266,7 +266,7 @@ namespace inz.Server.Migrations
                     b.Property<string>("CoordinatingUserId")
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("Dob")
+                    b.Property<DateOnly>("Dob")
                         .HasColumnType("Date");
 
                     b.Property<string>("Email")
@@ -440,6 +440,7 @@ namespace inz.Server.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("NormalizedEmail")
@@ -463,6 +464,7 @@ namespace inz.Server.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Surname")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("TwoFactorEnabled")

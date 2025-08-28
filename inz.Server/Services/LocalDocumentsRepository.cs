@@ -2,12 +2,39 @@ namespace inz.Server.Services;
 
 public interface IDocumentsRepository
 {
+    /// <summary>
+    /// Returns boolean value whether a file exists on file system.
+    /// </summary>
     public Task<bool> DocumentExists(string userId, string path);
+
+    /// <summary>
+    /// Returns a file stream of a file stored in file system.
+    /// </summary>
     public Task<Stream> GetDocument(string userId, string path);
+
+    /// <summary>
+    /// Attempts to save a document in file system.
+    /// </summary>
     public Task<string> SaveDocument(string userId, IFormFile file, string fileName);
+
+    /// <summary>
+    /// Attempts to rename a document stored in file system.
+    /// </summary>
     public Task<string> RenameDocument(string userId, string path, string newName);
+
+    /// <summary>
+    /// Attempts to perform a soft-delete on a document by marking it with DELETED_ name prefix.
+    /// </summary>
     public Task<string> SoftDeleteDocument(string userId, string path);
+
+    /// <summary>
+    /// Restores previously soft-deleted document by removing DELETED_ name prefix.
+    /// </summary>
     public Task<string> RestoreDocument(string userId, string path, string newFileName);
+
+    /// <summary>
+    /// Attempts to remove a document from file system.
+    /// </summary>
     public Task DeleteDocument(string userId, string path);
 }
 
@@ -35,12 +62,6 @@ public class LocalDocumentsRepository : IDocumentsRepository
         // create directory if it doesn't exist
         var dirPath = Path.Combine(_dir, userId);
         Directory.CreateDirectory(dirPath);
-
-        // *zostawiam dla potomnych*
-        // calculate filename hash
-        // var fileNameHash = new StringBuilder();
-        // foreach (var b in MD5.HashData(Encoding.UTF8.GetBytes(fileName)))
-        //     fileNameHash.Append(b.ToString("X2"));
 
         // create path storage/userId/fileName and save file
         var filePath = Path.Combine(dirPath, fileName);

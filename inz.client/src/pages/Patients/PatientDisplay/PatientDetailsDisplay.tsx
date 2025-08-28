@@ -56,6 +56,7 @@ const PatientDetailsDisplay = ({
         <Button
           variant="subtle"
           size="compact-md"
+          pl="0"
           color="gray"
           onClick={onBack}
         >
@@ -82,7 +83,7 @@ const PatientDetailsDisplay = ({
                 {dayjs().diff(patient.dob, 'year')} lat)
               </Text>
             </Flex>
-            <Stack gap={0} visibleFrom="sm">
+            <Stack gap="xs" visibleFrom="sm">
               <Button variant="subtle" size="md" color="gray" onClick={onBack}>
                 <IconX />
               </Button>

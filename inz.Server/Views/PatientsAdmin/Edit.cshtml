@@ -1,0 +1,94 @@
+@model inz.Server.ViewModels.Patients.PatientEditViewModel
+@{
+    ViewData["Title"] = "Edytuj Pacjenta";
+    Layout = "_AdminLayout";
+}
+
+<div class="row justify-content-center">
+    <div class="card shadow-sm">
+        <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+            <div class="card-header">
+                <h4 class="mb-0">Edytuj dane pacjenta</h4>
+            </div>
+            <div class="card-body">
+                <input type="hidden" asp-for="ReturnUrl"/>
+                <input type="hidden" asp-for="Id"/>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                <h5 class="mb-3">Dane osobowe</h5>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Name"></label>
+                        <input asp-for="Name" class="form-control"/>
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Surname"></label>
+                        <input asp-for="Surname" class="form-control"/>
+                        <span asp-validation-for="Surname" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Dob"></label>
+                        <input asp-for="Dob" class="form-control"/>
+                        <span asp-validation-for="Dob" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <h5 class="mb-3 mt-2">Dane kontaktowe</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Email"></label>
+                        <input asp-for="Email" class="form-control"/>
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Phone"></label>
+                        <input asp-for="Phone" class="form-control"/>
+                        <span asp-validation-for="Phone" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <h5 class="mb-3 mt-2">Adres</h5>
+                <div class="row">
+                    <div class="col-md-8 mb-3">
+                        <label asp-for="Street"></label>
+                        <input asp-for="Street" class="form-control"/>
+                        <span asp-validation-for="Street" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label asp-for="House"></label>
+                        <input asp-for="House" class="form-control"/>
+                        <span asp-validation-for="House" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label asp-for="Apartment"></label>
+                        <input asp-for="Apartment" class="form-control"/>
+                        <span asp-validation-for="Apartment" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3 mb-3"><label asp-for="ZipCode"></label>
+                        <input asp-for="ZipCode" class="form-control"/>
+                        <span asp-validation-for="ZipCode" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-5 mb-3">
+                        <label asp-for="City"></label>
+                        <input asp-for="City" class="form-control"/>
+                        <span asp-validation-for="City" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Province"></label>
+                        <select asp-for="Province" asp-items="@Model.ProvinceList" class="form-select">
+                            <option value="">Wybierz województwo</option>
+                        </select>
+                        <span asp-validation-for="Province" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-end">
+                <a href="@(Model.ReturnUrl ?? Url.Action("Index"))" class="btn btn-secondary">Anuluj</a>
+                <button type="submit" class="btn btn-primary">Zapisz zmiany</button>
+            </div>
+        </form>
+    </div>
+</div>

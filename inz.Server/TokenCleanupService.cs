@@ -2,6 +2,9 @@ using inz.Server.Data;
 
 namespace inz.Server;
 
+/// <summary>
+/// A background service that removes any expired Refresh Tokens from database every 24 hours.
+/// </summary>
 public class TokenCleanupService : BackgroundService
 {
     private readonly IServiceScopeFactory _serviceScope;

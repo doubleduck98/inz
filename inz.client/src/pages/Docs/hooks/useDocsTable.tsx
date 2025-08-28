@@ -10,6 +10,9 @@ interface useDocsTableProps {
   initSelection?: number[];
 }
 
+/**
+ * Hook for managing docs table state.
+ */
 const useDocsTable = ({
   docs,
   initSort = null,

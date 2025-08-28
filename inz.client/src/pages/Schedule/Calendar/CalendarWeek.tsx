@@ -4,13 +4,7 @@ import classes from './Calendar.module.css';
 import { WeekSchedule } from '../types/WeekSchedule';
 import BookingCard from './BookingCard';
 import { Booking } from '../types/Booking';
-import {
-  END_HOUR,
-  HOUR_HEIGHT,
-  IDX_FORMAT,
-  START_HOUR,
-  TIME_PL,
-} from './Constants';
+import { END_HOUR, IDX_FORMAT, START_HOUR, TIME_PL } from './Constants';
 
 interface CalendarWeekProps {
   currentDate: Dayjs;
@@ -57,7 +51,6 @@ const CalendarWeek = ({
               left: 2,
               right: 2,
               blur: 2,
-              bottom: HOUR_HEIGHT,
             }}
             transitionProps={{
               transition: 'fade',

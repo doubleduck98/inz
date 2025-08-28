@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace inz.Server.Controllers;
+namespace inz.Server.Controllers.ApiControllers;
 
 [ApiController]
 [Route("[controller]/[action]")]
@@ -48,7 +48,7 @@ public class AuthController : ApiBaseController
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public async Task<IActionResult> Logout([FromBody] LogoutReq req)
     {
-        var res = await _auth.InvalidateUserTokenAsync(UserId, req.Token);
+        var res = await _auth.InvalidateUserTokenAsync(UserId, req.Token, HttpContext);
         return res.IsSuccess ? Ok() : ProblemResponse(res);
     }
 

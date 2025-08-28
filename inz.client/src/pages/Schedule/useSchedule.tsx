@@ -28,6 +28,9 @@ interface UseSchedule {
 
 const IDX_FORMAT = 'YYYY-MM-DD';
 
+/**
+ * Main schedule hook managing state of schedules.
+ */
 const useSchedule = (): UseSchedule => {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const date = dayjs();

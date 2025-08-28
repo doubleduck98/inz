@@ -81,9 +81,8 @@ const PatientList = ({
           ) : (
             <List spacing="xs" size="sm" center>
               {filteredPatients2.map((patient) => (
-                <Paper withBorder mt="xs">
+                <Paper key={patient.id} withBorder mt="xs">
                   <ListItem
-                    key={patient.id}
                     onClick={() => onPatientClick(patient)}
                     style={{ cursor: 'pointer' }}
                     p="sm"

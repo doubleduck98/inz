@@ -1,0 +1,124 @@
+@model inz.Server.ViewModels.Documents.DocIndexViewModel
+@{
+    ViewData["Title"] = "Zarządzanie Dokumentami";
+    Layout = "_AdminLayout";
+}
+
+<h1 class="mb-4">Dokumenty</h1>
+
+<form asp-action="Index" method="get" class="mb-4">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <input asp-for="Search" class="form-control" placeholder="Szukaj po nazwie pliku...">
+        </div>
+        <div class="col-md-3">
+            <select asp-for="SelectedUserId" asp-items="@Model.UserList" class="form-select" id="user-filter">
+                <option value="">Wszyscy użytkownicy</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select asp-for="SelectedPatientId" asp-items="@Model.PatientList" class="form-select" id="patient-filter">
+                <option value="">Wszyscy pacjenci</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-grid">
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Filturuj</button>
+                <a asp-action="Index" class="btn btn-secondary" title="Wyczyść filtry"><i class="bi bi-x-lg"></i></a>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+            <tr>
+                <th>Nazwa pliku</th>
+                <th>Właściciel</th>
+                <th>Pacjent</th>
+                <th>Ostatnia modyfikacja</th>
+                <th class="text-end">Akcje</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var doc in Model.Documents)
+            {
+                <tr>
+                    <td><i class="bi bi-file-earmark-text me-2"></i>@doc.FileName</td>
+                    <td>@doc.Owner</td>
+                    <td>@doc.Patient</td>
+                    <td>@doc.LastEditUtc.ToLocalTime().ToString("g")</td>
+                    <td class="text-end">
+                        <div class="btn-group" role="group">
+                            <a href="@Url.Action("Downloadn", "DocumentsAdmin", new { id = doc.Id })" class="btn btn-sm btn-outline-secondary">Pobierz</a>
+                            <a asp-action="Edit" asp-route-id="@doc.Id"
+                               asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)"
+                               class="btn btn-sm btn-outline-secondary">Edytuj</a>
+                            <a href="@Url.Action("Delete", "DocumentsAdmin", new { id = doc.Id })"
+                               class="btn btn-sm btn-outline-danger" data-bs-toggle="ajax-modal"
+                               data-bs-target="#deleteDocModal">Usuń</a>
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-4">
+        <ul class="pagination justify-content-end">
+            <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage - 1)"
+                   asp-route-searchString="@Model.Search" asp-route-userId="@Model.SelectedUserId">Poprzednia</a>
+            </li>
+            @for (var i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-searchString="@Model.Search"
+                       asp-route-userId="@Model.SelectedUserId">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage + 1)"
+                   asp-route-searchString="@Model.Search" asp-route-userId="@Model.SelectedUserId">Następna</a>
+            </li>
+        </ul>
+    </nav>
+}
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('#user-filter').on('change', function () {
+                const userId = $(this).val();
+                const patientDropdown = $('#patient-filter');
+
+                patientDropdown.empty();
+                patientDropdown.append('<option value="">Ładowanie..</option>');
+
+                if (!userId) {
+                    return;
+                }
+
+                $.getJSON(`/Admin/Patients/OfUser/${userId}`, function (data) {
+                    patientDropdown.empty();
+                    patientDropdown.append('<option value="">Wszyscy pacjenci</option>');
+                    if (data) {
+                        $.each(data, function (index, item) {
+                            const name = item.name + ' ' + item.surname;
+                            patientDropdown.append($('<option>', {
+                                value: item.id,
+                                text: name,
+                            }));
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

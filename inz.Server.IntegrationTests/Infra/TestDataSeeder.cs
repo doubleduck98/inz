@@ -29,7 +29,11 @@ public class TestDataSeeder
     {
         var user = new User
         {
-            Id = _userId
+            Id = _userId,
+            Name = "Test",
+            Surname = "Test",
+            Email = "test@test.test",
+            UserName = "test@test.test"
         };
         await _dbContext.Users.AddAsync(user);
         return user;

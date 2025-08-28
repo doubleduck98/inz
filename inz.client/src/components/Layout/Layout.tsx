@@ -20,6 +20,9 @@ const linkData = [
   { link: '/schedule', label: 'Zajęcia', icon: IconCalendarEvent },
 ];
 
+/**
+ * Main layout component for the app.
+ */
 function Layout() {
   const [mobileOpened, { close: closeMobile, toggle: toggleMobile }] =
     useDisclosure();
@@ -97,7 +100,7 @@ function Layout() {
         )}
       </AppShell.Navbar>
 
-      <AppShell.Main pt={{ base: 52, sm: 66 }} pb="0px">
+      <AppShell.Main>
         <Outlet />
       </AppShell.Main>
     </AppShell>

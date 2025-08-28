@@ -16,6 +16,9 @@ import { useState } from 'react';
 import CalendarControls from './Controls/CalendarControls';
 import SidebarControls from './Controls/SidebarControls';
 
+/**
+ * Main schedule page.
+ */
 const Schedule = () => {
   const {
     currentDay,

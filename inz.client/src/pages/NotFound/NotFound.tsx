@@ -3,6 +3,9 @@ import { Illustration } from './Illustration';
 import classes from './NotFound.module.css';
 import { useNavigate } from 'react-router-dom';
 
+/**
+ * Wildcard not found page prompting user to go back to home page.
+ */
 const NotFound = () => {
   const navigate = useNavigate();
   return (

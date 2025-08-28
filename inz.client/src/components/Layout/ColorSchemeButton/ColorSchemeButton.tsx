@@ -9,6 +9,9 @@ import {
 } from '@mantine/core';
 import classes from './ColorSchemeButton.module.css';
 
+/**
+ * Button component for setting light and dark mode
+ */
 const ColorSchemeButton = () => {
   const { setColorScheme } = useMantineColorScheme();
   const computedColorScheme = useComputedColorScheme('light', {

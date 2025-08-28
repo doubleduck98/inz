@@ -2,6 +2,7 @@ using System.Text;
 using inz.Server.Data;
 using inz.Server.Dtos.Bookings;
 using inz.Server.Models;
+using inz.Server.ViewModels.Rooms;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,16 +10,57 @@ namespace inz.Server.Services;
 
 public interface IBookingsService
 {
+    /// <summary>
+    /// Returns bookings of given user for a given date.
+    /// </summary>
     public Task<List<BookingDto>> GetBookingsForDay(string userId, DateOnly date);
 
+    /// <summary>
+    /// Returns bookings of given user for a given time span.
+    /// </summary>
+    /// <param name="userId">User id</param>
+    /// <param name="startDate">Start of time span.</param>
+    /// <param name="endDate">End of time span inclusive.</param>
     public Task<Dictionary<DateOnly, List<BookingDto>>> GetBookingsForWeek(string userId, DateOnly startDate,
         DateOnly endDate);
 
+    /// <summary>
+    /// Returns list of available hours.
+    /// </summary>
     public Task<Dictionary<DateOnly, List<int>>> GetAvailableDates(string userId, int roomId, List<DateOnly> dates);
+
+    /// <summary>
+    /// Returns list of all rooms.
+    /// </summary>
     public Task<List<RoomDto>> GetRooms();
+
+    /// <summary>
+    /// Creates a booking fo given user.
+    /// </summary>
     public Task<Result<List<BookingDto>>> CreateBooking(string userId, CreateBookingReq req);
+
+    /// <summary>
+    /// Edits a booking fo given user.
+    /// </summary>
     public Task<Result> EditBooking(string userId, int bookingId, EditBookingReq req);
+
+    /// <summary>
+    /// Deletes a booking fo given user.
+    /// </summary>
     public Task<Result> DeleteBooking(string userId, int bookingId);
+
+    /// <summary>
+    /// Admin method to add a room.
+    /// </summary>
+    public Task<Result> AdminAddRoom(RoomCreateViewModel model);
+    /// <summary>
+    /// Admin method to delete a room.
+    /// </summary>
+    public Task AdminDeleteRoom(int id);
+    /// <summary>
+    /// Admin method for querying room info.
+    /// </summary>
+    public Task<Result<RoomDto>> AdminGetRoom(int id);
 }
 
 public class BookingService : IBookingsService
@@ -160,6 +202,32 @@ public class BookingService : IBookingsService
         _db.Bookings.Remove(booking);
         await _db.SaveChangesAsync();
         return Result.Success();
+    }
+
+    public async Task<Result<RoomDto>> AdminGetRoom(int id)
+    {
+        var room = await _db.Rooms.SingleOrDefaultAsync(r => r.Id == id);
+        return room == null ? Result.Failure<RoomDto>(Error.RoomNotFound) : new RoomDto(room.Id, room.Name);
+    }
+
+    public async Task<Result> AdminAddRoom(RoomCreateViewModel model)
+    {
+        var exists = _db.Rooms.Any(r => r.Name == model.Name);
+        if (exists) return Result.Failure(new AppErrors.RoomAlreadyExists());
+        var newRoom = new Room
+        {
+            Name = model.Name
+        };
+        _db.Rooms.Add(newRoom);
+        await _db.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task AdminDeleteRoom(int id)
+    {
+        var room = await _db.Rooms.SingleAsync(r => r.Id == id);
+        _db.Rooms.Remove(room);
+        await _db.SaveChangesAsync();
     }
 
     /// <summary>

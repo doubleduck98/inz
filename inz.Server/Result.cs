@@ -1,5 +1,8 @@
 namespace inz.Server;
 
+/// <summary>
+/// Base result class for encapsulating responses from various sources across the app.
+/// </summary>
 public class Result
 {
     public bool IsSuccess { get; }
@@ -45,6 +48,12 @@ public class Result<T> : Result
     public static implicit operator Result<T>(T value) => new(value, true, null);
 }
 
+/// <summary>
+/// Base app Error class.
+/// </summary>
+/// <param name="Type">Type of error.</param>
+/// <param name="Message">Formatted message that is often presented back to end user.</param>
+/// <param name="Code">Http status code corresponding to error type.</param>
 public record Error(string Type, string Message, int Code)
 {
     public static readonly Error AuthenticationFailed =
@@ -85,4 +94,40 @@ public record Error(string Type, string Message, int Code)
     
     public static Error BookingError(string message) =>
         new("Booking.ALREADY_EXISTS", message, StatusCodes.Status409Conflict);
+
+    public static readonly Error UserNotFound =
+        new("User.USER_NOT_FOUND", "Nie znaleziono użytkownika o podanym id", StatusCodes.Status404NotFound);
+}
+
+public static class AppErrors
+{
+    public record UserNotFound()
+        : Error("User.USER_NOT_FOUND", "Nie znaleziono użytkownika o podanym id", StatusCodes.Status404NotFound);
+
+    public record DuplicateUserName()
+        : Error("User.DUPLICATE_USERNAME", "Ta nazwa użytkownika/email jest zajęta", StatusCodes.Status409Conflict);
+
+    public record InvalidPasswordError()
+        : Error("User.INVALID_PASSWORD", "Błędne hasło", StatusCodes.Status400BadRequest);
+
+    public record GenericError()
+        : Error("User.GENERIC_ERROR", "Wystąpił nieznany błąd", StatusCodes.Status400BadRequest);
+
+    public record FileNotFound()
+        : Error("File.FILE_NOT_FOUND", "Nie znaleziono pliku o podanym id", StatusCodes.Status404NotFound);
+
+    public record FileNotPresent()
+        : Error("File.FILE_NOT_PRESENT", "Plik nie został znaleziony na dysku", StatusCodes.Status404NotFound);
+
+    public record FileAlreadyExists()
+        : Error("File.ALREADY_EXISTS", "Istnieje już plik o podanej nazwie", StatusCodes.Status409Conflict);
+
+    public record PatientNotFound()
+        : Error("Patient.PATIENT_NOT_FOUND", "Pacjent o podanym id nie istnieje", StatusCodes.Status404NotFound);
+
+    public record PatientAlreadyExists() 
+        : Error("Patient.ALREADY_EXISTS", "Pacjent o podanych danych już istnieje", StatusCodes.Status409Conflict);
+
+    public record RoomAlreadyExists()
+        : Error("Room.ALREADY_EXISTS", "Sala o podanej nazwie już isnieje", StatusCodes.Status409Conflict);
 }

@@ -36,7 +36,7 @@ export const Authorize = ({ children }: Props) => {
     }
     setUser(null);
     localStorage.removeItem('user');
-    window.location.replace(`${TARGET_URL}/Account/Logout`);
+    window.location.replace(`${TARGET_URL}/Account/Login`);
   };
 
   /**
@@ -94,7 +94,7 @@ export const Authorize = ({ children }: Props) => {
   const getToken = async () => {
     try {
       const opts = {
-        url: 'Auth/GetToken',
+        url: `/Auth/GetToken`,
         method: 'Get',
         headers: { 'content-type': 'application/json' },
         withCredentials: true,
@@ -181,6 +181,9 @@ export const Authorize = ({ children }: Props) => {
   );
 };
 
+/**
+ * Central authorization hook keeping user state.
+ */
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {

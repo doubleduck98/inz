@@ -1,0 +1,82 @@
+@model inz.Server.ViewModels.Patients.PatientDetailsViewModel
+
+@{
+    ViewBag.Title = "Szczegóły pacjenta";
+    Layout = "_AdminLayout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">@Model.FullName</h1>
+    <div>
+        <a asp-action="Edit" asp-route-id="@Model.Id"
+           asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)" class="btn btn-primary">
+            <i class="bi bi-pencil-fill me-2"></i>Edytuj Pacjenta
+        </a>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left-circle me-2"></i>Wróć do listy
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-5">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header"><h5 class="mb-0">Dane Podstawowe</h5></div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">@Html.DisplayNameFor(m => m.Dob)</dt>
+                    <dd class="col-sm-7">@Model.Dob.ToShortDateString()</dd>
+
+                    <dt class="col-sm-5">@Html.DisplayNameFor(m => m.Email)</dt>
+                    <dd class="col-sm-7">@(Model.Email ?? "Nie podano")</dd>
+
+                    <dt class="col-sm-5">@Html.DisplayNameFor(m => m.Phone)</dt>
+                    <dd class="col-sm-7">@(Model.Phone ?? "Nie podano")</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header"><h5 class="mb-0">Adres</h5></div>
+            <div class="card-body">
+                @Model.FullAddress
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Osoby Kontaktowe</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    @foreach (var contact in Model.Contacts)
+                    {
+                        <tr>
+                            <td><strong>@contact.Name</strong></td>
+                            <td>@contact.Email</td>
+                            <td>@contact.Phone</td>
+                        </tr>
+                    }
+                </table>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Dokumenty</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    @foreach (var doc in Model.Documents)
+                    {
+                        <tr>
+                            <td><i class="bi bi-file-earmark-text me-2"></i>@doc</td>
+                        </tr>
+                    }
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

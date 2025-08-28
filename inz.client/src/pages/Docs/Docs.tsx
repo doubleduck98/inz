@@ -15,6 +15,9 @@ import { ApiError } from '@/types/ApiError';
 import { Doc } from '@/types/Doc';
 import Trash from './Trash/Trash';
 
+/**
+ * Documents page mother-component.
+ */
 const Docs = () => {
   const {
     docs,

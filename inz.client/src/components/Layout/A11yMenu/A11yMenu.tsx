@@ -13,6 +13,9 @@ import useZoom from './useZoom';
 import { useEffect } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 
+/**
+ * Accessibility menu component.
+ */
 const AccesibilityMenu = () => {
   const theme = useMantineTheme();
   const { zoom, setZoom } = useZoom();

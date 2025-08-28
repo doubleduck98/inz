@@ -5,6 +5,9 @@ interface useZoom {
   setZoom: (value: number) => void;
 }
 
+/**
+ * Hook for keeping state of app zoom, and persisting the setting in local Storage
+ */
 const useZoom = (): useZoom => {
   const [zoom, storeZoom] = useLocalStorage({
     key: 'zoom',
