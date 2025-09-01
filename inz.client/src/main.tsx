@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import '@mantine/core/styles.css';
 import '@mantine/dropzone/styles.css';
 import '@mantine/dates/styles.css';
+import '@mantine/notifications/styles.css';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import 'dayjs/locale/pl';
@@ -16,6 +17,7 @@ import App from './App.tsx';
 import { ModalsProvider } from '@mantine/modals';
 import { DatesProvider } from '@mantine/dates';
 import { ThemeProvider, useTheme } from './hooks/useTheme.tsx';
+import { Notifications } from '@mantine/notifications';
 
 dayjs.extend(customParseFormat);
 dayjs.extend(localizedFormat);
@@ -26,6 +28,7 @@ const MantineRoot = () => {
   const { currentTheme } = useTheme();
   return (
     <MantineProvider theme={currentTheme} defaultColorScheme="auto">
+      <Notifications />
       <ModalsProvider>
         <DatesProvider settings={{ locale: 'pl' }}>
           <App />

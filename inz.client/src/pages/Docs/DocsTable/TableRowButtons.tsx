@@ -91,7 +91,7 @@ const TableRowButtons = ({
             <IconDownload size={21} />
           </ActionIcon>
         </Tooltip>
-        <Tooltip label="Edutuj">
+        <Tooltip label="Edytuj">
           <ActionIcon variant="subtle" color="gray" onClick={() => onEdit(doc)}>
             <IconEdit size={21} />
           </ActionIcon>

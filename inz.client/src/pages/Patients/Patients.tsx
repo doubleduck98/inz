@@ -28,6 +28,7 @@ import {
 import AddContactForm from './AddContactForm/AddContactForm';
 import { usePatients } from './usePatients';
 import dayjs from 'dayjs';
+import useNotifications from '@/hooks/useNotifications';
 
 const DATE_FORMAT = 'YYYY-MM-DD';
 
@@ -44,6 +45,7 @@ const Patients = () => {
     addConDialogOpened,
     { open: openAddConDialog, close: closeAddConDialog },
   ] = useDisclosure(false);
+  const { showSuccessMessage, showErrorMessage } = useNotifications();
 
   const {
     selectedPatientId,
@@ -89,6 +91,9 @@ const Patients = () => {
     try {
       await addPatient(formData);
       closeAddDialog();
+      showSuccessMessage(
+        `Pomyślnie dodano pacjenta ${addForm.values.name} ${addForm.values.surname}`
+      );
       addForm.reset();
       setActive(0);
     } catch (e) {
@@ -102,6 +107,8 @@ const Patients = () => {
             dob: ' ',
           });
         }
+      } else {
+        showErrorMessage('Błąd przy dodawaniu pacjenta.');
       }
     }
   };
@@ -132,6 +139,7 @@ const Patients = () => {
 
     try {
       await editPatient(data);
+      showSuccessMessage('Pomyślnie zedytowano dane pacjenta.');
       editForm.reset();
       closeEditDialog();
     } catch (e) {
@@ -144,6 +152,8 @@ const Patients = () => {
             dob: ' ',
           });
         }
+      } else {
+        showErrorMessage('Błąd przy edycji danych pacjenta.');
       }
     }
   };
@@ -165,10 +175,11 @@ const Patients = () => {
 
     try {
       await addContactToPatient(form);
+      showSuccessMessage(`Pomyślnie dodano kontakt ${form.name}.`);
       addConForm.reset();
       closeAddConDialog();
-    } catch (e) {
-      console.error(e);
+    } catch {
+      showErrorMessage('Błąd przy dodawaniu kontaktu.');
     }
   };
 

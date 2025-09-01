@@ -15,6 +15,7 @@ import Calendar from './Calendar/Calendar';
 import { useState } from 'react';
 import CalendarControls from './Controls/CalendarControls';
 import SidebarControls from './Controls/SidebarControls';
+import useNotifications from '@/hooks/useNotifications';
 
 /**
  * Main schedule page.
@@ -44,6 +45,7 @@ const Schedule = () => {
   const [formLoading, setFormLoading] = useState(false);
   const handleDateChange = (date: Dayjs) => setDate(date);
   const handleDisplayChange = (value: string) => setDisplay(value as Display);
+  const { showSuccessMessage, showErrorMessage } = useNotifications();
 
   const addForm = useAddForm({
     mode: 'uncontrolled',
@@ -72,6 +74,7 @@ const Schedule = () => {
     try {
       setFormLoading(true);
       await addBooking(addForm.getValues());
+      showSuccessMessage('Pomyślnie zarezerwowano sale.');
       addForm.reset();
       closeAddForm();
     } catch (e) {
@@ -89,6 +92,8 @@ const Schedule = () => {
           });
           addForm.setErrors(errors);
         }
+      } else {
+        showErrorMessage('Wystąpił błąd przy rezerwacji sal.');
       }
     } finally {
       setFormLoading(false);
@@ -128,6 +133,7 @@ const Schedule = () => {
     try {
       setFormLoading(true);
       await editBooking(editForm.getValues());
+      showSuccessMessage('Pomyślnie zedytowano rezerwację.');
       editForm.reset();
       closeEditForm();
     } catch (e) {
@@ -139,6 +145,8 @@ const Schedule = () => {
             'W tym terminie ten pokój jest już zarezerwowany'
           );
         }
+      } else {
+        showErrorMessage('Wystapił błąd przy próbie edycji.');
       }
     } finally {
       setFormLoading(false);
@@ -148,8 +156,9 @@ const Schedule = () => {
   const handleDeleteBooking = async (id: number) => {
     try {
       await deleteBooking(id);
-    } catch (e) {
-      console.error(e);
+      showSuccessMessage('Pomyślnie odwołano rezerwację.');
+    } catch {
+      showErrorMessage('Wystąpił błąd przy odwoływaniu rezerwacji.');
     }
   };
 

@@ -15,6 +15,7 @@ import { useMediaQuery } from '@mantine/hooks';
 import { IconClockHour5, IconRestore, IconTrash } from '@tabler/icons-react';
 import { useState } from 'react';
 import { expBadgeFormat } from '../utils/DocsUtils';
+import useNotifications from '@/hooks/useNotifications';
 
 interface DeletedDoc {
   id: number;
@@ -38,6 +39,7 @@ const Trash = ({
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [deletedDocuments, setDeletedDocuments] = useState<DeletedDoc[]>([]);
   const [loading, setLoading] = useState(false);
+  const { showSuccessMessage, showErrorMessage } = useNotifications();
 
   const fetchDeleted = async () => {
     const opts = {
@@ -66,8 +68,9 @@ const Trash = ({
     try {
       await axiosInstance.request(opts);
       setDeletedDocuments((prev) => prev.filter((d) => d.id !== id));
-    } catch (e) {
-      console.error(e);
+      showSuccessMessage('Pomyślnie usunięto plik.');
+    } catch {
+      showErrorMessage('Błąd przy usuwaniu pliku.');
     }
   };
 
@@ -82,6 +85,7 @@ const Trash = ({
   const handleRestore = async (id: number) => {
     await onRestore(id);
     setDeletedDocuments((prev) => prev.filter((d) => d.id !== id));
+    showSuccessMessage('Pomyślnie przywrócono plik.');
   };
 
   const handleDrawerOpen = () => {

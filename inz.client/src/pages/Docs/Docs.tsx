@@ -14,6 +14,7 @@ import { AxiosError } from 'axios';
 import { ApiError } from '@/types/ApiError';
 import { Doc } from '@/types/Doc';
 import Trash from './Trash/Trash';
+import useNotifications from '@/hooks/useNotifications';
 
 /**
  * Documents page mother-component.
@@ -42,6 +43,7 @@ const Docs = () => {
     useDisclosure(false);
   const [trashOpened, { open: openTrash, close: closeTrash }] =
     useDisclosure(false);
+  const { showSuccessMessage, showErrorMessage } = useNotifications();
 
   const form = useUploadForm({
     initialValues: {
@@ -94,6 +96,7 @@ const Docs = () => {
         form.reset();
         closeUploadDialog();
       }, 500);
+      showSuccessMessage(`Pomyślnie przesłano plik ${form.values.fileName}`);
     } catch (e) {
       if (e instanceof AxiosError && e.response?.data) {
         const error = e.response.data as ApiError;
@@ -103,6 +106,10 @@ const Docs = () => {
             fileName: 'Plik o takiej nazwie już istnieje',
           });
         }
+      } else {
+        showErrorMessage(
+          'Błąd przy przesyłaniu pliku. Spróbuj ponownie za moment.'
+        );
       }
     }
   };
@@ -128,20 +135,36 @@ const Docs = () => {
       await editDocument(fileId, data);
       editForm.reset();
       closeEditDialog();
+      showSuccessMessage(`Pomyślnie zedytowano plik ${fileName}`);
     } catch (e) {
       if (e instanceof AxiosError && e.response?.data) {
         const error = e.response.data as ApiError;
         if (error.status === 409) {
           editForm.setErrors({ fileName: 'Plik o takiej nazwie już istnieje' });
         }
+      } else {
+        showErrorMessage('Błąd przy edycji pliku. Spróbuj ponownie za moment.');
       }
     }
   };
 
-  const handleDelete = async (id: number) => await deleteDocument(id);
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteDocument(id);
+      showSuccessMessage('Pomyślnie przeniesiono plik do kosza.');
+    } catch {
+      showErrorMessage('Błąd przy usuwaniu pliku.');
+    }
+  };
 
-  const handleDeleteSelection = async (ids: number[]) =>
-    await deleteSelectedDocuments(ids);
+  const handleDeleteSelection = async (ids: number[]) => {
+    try {
+      await deleteSelectedDocuments(ids);
+      showSuccessMessage('Pomyślnie przeniesiono pliki do kosza.');
+    } catch {
+      showErrorMessage('Błąd przy usuwaniu plików.');
+    }
+  };
 
   const handleDownload = async (id: number) => await downloadDocument(id);
 
