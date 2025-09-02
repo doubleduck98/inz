@@ -143,7 +143,7 @@ public class DocumentsService : IDocumentsService
     {
         return await _db.Documents.Include(d => d.Patient)
             .Where(d => d.OwnerId == userId)
-            .OrderByDescending(d => d.LastEditUtc).ThenByDescending(d => d.AddedOnUtc)
+            .OrderByDescending(d => d.LastEditUtc)
             .Select(doc => new DocumentDto(doc.Id, doc.FileName, doc.PatientId,
                 doc.Patient != null ? $"{doc.Patient.Name} {doc.Patient.Surname}" : null))
             .ToListAsync();
@@ -162,8 +162,8 @@ public class DocumentsService : IDocumentsService
     {
         var (file, fileName, patientId) = req;
         var ex = Path.GetExtension(file.FileName);
-        var fileType = FileExtensionToType(ex);
-        if (fileType == null) return Result.Failure<DocumentDto>(Error.FileIllegalExtension);
+        var legalEx = LegalFileExtension(ex);
+        if (!legalEx) return Result.Failure<DocumentDto>(Error.FileIllegalExtension);
         if (!fileName.EndsWith(ex)) fileName += ex;
 
         var alreadyExists = _db.Documents.Any(d => d.FileName == fileName && d.OwnerId == userId);
@@ -195,9 +195,7 @@ public class DocumentsService : IDocumentsService
             User = userWithPatient.user,
             Patient = userWithPatient.patient,
             FileName = fileName,
-            FileType = (FileType)fileType,
             SourcePath = path,
-            AddedOnUtc = DateTime.UtcNow,
             LastEditUtc = DateTime.UtcNow
         };
         await _db.Documents.AddAsync(doc);
@@ -482,12 +480,9 @@ public class DocumentsService : IDocumentsService
         return Result.Success();
     }
 
-    private static FileType? FileExtensionToType(string ex) => ex switch
+    private static bool LegalFileExtension(string ex) => ex switch
     {
-        ".doc" => FileType.Doc,
-        ".docx" => FileType.Docx,
-        ".pdf" => FileType.Pdf,
-        ".txt" => FileType.Txt,
-        _ => null
+        ".doc" or ".docx" or ".pdf" or ".txt" => true,
+        _ => false
     };
 }
