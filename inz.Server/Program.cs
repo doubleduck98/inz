@@ -77,6 +77,7 @@ builder.Services.AddControllersWithViews();
 
 // bg jobs
 builder.Services.AddHostedService<TokenCleanupService>();
+builder.Services.AddHostedService<DocumentCleanupService>();
 
 var app = builder.Build();
 
