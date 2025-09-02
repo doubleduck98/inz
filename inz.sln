@@ -4,7 +4,7 @@ Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "inz.client", "inz.client\in
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "inz.Server", "inz.Server\inz.Server.csproj", "{B916A220-EBC2-49B3-9051-A34F9C36954E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "inz.ServerTest", "inz.ServerTest\inz.ServerTest.csproj", "{472FBF07-2463-48DB-92B9-403E41E9375A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "inz.Server.UnitTests", "inz.Server.UnitTests\inz.Server.UnitTests.csproj", "{472FBF07-2463-48DB-92B9-403E41E9375A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F3E96C37-A0E1-48D6-A96D-B82B654A1C7C}"
 EndProject
